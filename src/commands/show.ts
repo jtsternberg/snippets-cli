@@ -26,8 +26,14 @@ export const showCommand = new Command("show")
 
     // Header
     console.log(`# ${snippet.frontmatter.title}`);
+    if (snippet.frontmatter.description) {
+      console.log(snippet.frontmatter.description);
+    }
     if (snippet.frontmatter.tags.length) {
       console.log(`Tags: ${snippet.frontmatter.tags.join(", ")}`);
+    }
+    if (snippet.frontmatter.aliases?.length) {
+      console.log(`Aliases: ${snippet.frontmatter.aliases.join(", ")}`);
     }
     if (snippet.frontmatter.language) {
       console.log(`Language: ${snippet.frontmatter.language}`);
