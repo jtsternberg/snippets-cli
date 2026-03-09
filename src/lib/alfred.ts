@@ -11,6 +11,7 @@ interface AlfredItem {
   mods: {
     cmd: { subtitle: string; arg: string };
     alt: { subtitle: string; arg: string };
+    ctrl: { subtitle: string; arg: string };
   };
   text: { copy: string; largetype: string };
   quicklookurl: string;
@@ -36,11 +37,12 @@ export function formatAlfredResults(snippets: Snippet[]): AlfredOutput {
         uid: `${s.frontmatter.type}/${s.slug}`,
         title: s.frontmatter.title || s.slug,
         subtitle,
-        arg: s.filePath,
+        arg: codeContent,
         autocomplete: s.frontmatter.title || s.slug,
         mods: {
           cmd: { subtitle: "Copy to clipboard", arg: codeContent },
           alt: { subtitle: "Open in editor", arg: s.filePath },
+          ctrl: { subtitle: "Reveal in Finder", arg: s.filePath },
         },
         text: { copy: codeContent, largetype: codeContent },
         quicklookurl: s.filePath,
@@ -65,6 +67,7 @@ export function formatAlfredError(message: string): AlfredOutput {
         mods: {
           cmd: { subtitle: message, arg: "" },
           alt: { subtitle: message, arg: "" },
+          ctrl: { subtitle: message, arg: "" },
         },
         text: { copy: message, largetype: message },
         quicklookurl: "",

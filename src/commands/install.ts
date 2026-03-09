@@ -1,7 +1,9 @@
 import { Command } from "commander";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { loadConfig } from "../lib/config.js";
 
 interface CommandInfo {
   name: string;
@@ -343,6 +345,357 @@ function getSourceInstruction(shell: string, path: string, zshSetupMsg?: string)
   }
 }
 
+function getSnipPath(): string {
+  try {
+    return execSync("which snip", { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] }).trim();
+  } catch {
+    return "snip";
+  }
+}
+
+function getAlfredPrefsPath(): string {
+  // Read Alfred's configured sync folder from macOS defaults
+  // Try Alfred 5 first, then fall back to Alfred 3/4
+  const domains = [
+    "com.runningwithcrayons.Alfred-Preferences-3",
+    "com.runningwithcrayons.Alfred-Preferences",
+  ];
+
+  for (const domain of domains) {
+    try {
+      const syncfolder = execSync(`defaults read ${domain} syncfolder`, {
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+      }).trim();
+
+      const resolved = syncfolder.replace(/^~\//, homedir() + "/");
+      const prefs = resolve(resolved, "Alfred.alfredpreferences");
+      if (existsSync(prefs)) return prefs;
+    } catch {
+      // Domain not found, try next
+    }
+  }
+
+  // Fallback: standard location
+  const fallback = resolve(
+    homedir(),
+    "Library",
+    "Application Support",
+    "Alfred",
+    "Alfred.alfredpreferences",
+  );
+  if (existsSync(fallback)) return fallback;
+
+  return "";
+}
+
+const BUNDLE_ID = "com.jtsternberg.snip-search";
+
+function findExistingWorkflow(workflowsDir: string): string | null {
+  if (!existsSync(workflowsDir)) return null;
+
+  for (const entry of readdirSync(workflowsDir)) {
+    if (!entry.startsWith("user.workflow.")) continue;
+    const plistPath = resolve(workflowsDir, entry, "info.plist");
+    if (!existsSync(plistPath)) continue;
+
+    try {
+      const bid = execSync(
+        `/usr/libexec/PlistBuddy -c 'Print :bundleid' "${plistPath}"`,
+        { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] },
+      ).trim();
+      if (bid === BUNDLE_ID) {
+        return resolve(workflowsDir, entry);
+      }
+    } catch {
+      // Skip unreadable plists
+    }
+  }
+
+  return null;
+}
+
+function generateInfoPlist(snipBin: string, maxResults: number): string {
+  const script = `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"\n${snipBin} search "{query}" --json -n ${maxResults}`;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>com.jtsternberg.snip-search</string>
+	<key>category</key>
+	<string>Productivity</string>
+	<key>connections</key>
+	<dict>
+		<key>script-filter</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>paste-action</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>copy-action</string>
+				<key>modifiers</key>
+				<integer>1048576</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>editor-action</string>
+				<key>modifiers</key>
+				<integer>524288</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>finder-action</string>
+				<key>modifiers</key>
+				<integer>262144</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>Justin Sternberg</string>
+	<key>description</key>
+	<string>Search code snippets with snip CLI</string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>Snip Search</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>autopaste</key>
+				<true/>
+				<key>clipboardtext</key>
+				<string>{query}</string>
+				<key>transient</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.clipboard</string>
+			<key>uid</key>
+			<string>paste-action</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>autopaste</key>
+				<false/>
+				<key>clipboardtext</key>
+				<string>{query}</string>
+				<key>transient</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.clipboard</string>
+			<key>uid</key>
+			<string>copy-action</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>openwith</key>
+				<string></string>
+				<key>sourcefile</key>
+				<string>{query}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openfile</string>
+			<key>uid</key>
+			<string>editor-action</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>sourcefile</key>
+				<string>{query}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.revealfile</string>
+			<key>uid</key>
+			<string>finder-action</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<false/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>snip</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<false/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string>Searching snippets…</string>
+				<key>script</key>
+				<string>${escapeXml(script)}</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>Search your snippet library</string>
+				<key>title</key>
+				<string>Search Snippets</string>
+				<key>type</key>
+				<integer>5</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>script-filter</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string></string>
+	<key>uidata</key>
+	<dict>
+		<key>paste-action</key>
+		<dict>
+			<key>xpos</key>
+			<real>400</real>
+			<key>ypos</key>
+			<real>50</real>
+		</dict>
+		<key>copy-action</key>
+		<dict>
+			<key>xpos</key>
+			<real>465</real>
+			<key>ypos</key>
+			<real>180</real>
+		</dict>
+		<key>editor-action</key>
+		<dict>
+			<key>xpos</key>
+			<real>455</real>
+			<key>ypos</key>
+			<real>310</real>
+		</dict>
+		<key>finder-action</key>
+		<dict>
+			<key>xpos</key>
+			<real>295</real>
+			<key>ypos</key>
+			<real>375</real>
+		</dict>
+		<key>script-filter</key>
+		<dict>
+			<key>xpos</key>
+			<real>100</real>
+			<key>ypos</key>
+			<real>150</real>
+		</dict>
+	</dict>
+	<key>userconfigurationconfig</key>
+	<array/>
+	<key>version</key>
+	<string>1.0.0</string>
+	<key>webaddress</key>
+	<string></string>
+</dict>
+</plist>`;
+}
+
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function installAlfredWorkflow(): void {
+  const prefsPath = getAlfredPrefsPath();
+
+  if (!prefsPath) {
+    console.error(
+      "Alfred preferences not found. Is Alfred installed?\n" +
+      "Checked macOS defaults and ~/Library/Application Support/Alfred/",
+    );
+    process.exit(1);
+  }
+
+  const workflowsDir = resolve(prefsPath, "workflows");
+  const snipBin = getSnipPath();
+  const config = loadConfig();
+  const maxResults = config.alfred?.maxResults ?? 20;
+
+  // Find existing workflow by bundle ID, or create new UUID-based directory
+  let workflowDir = findExistingWorkflow(workflowsDir);
+  if (workflowDir) {
+    console.log("Updating existing Snip Search workflow...");
+  } else {
+    const uuid = crypto.randomUUID().toUpperCase();
+    workflowDir = resolve(workflowsDir, `user.workflow.${uuid}`);
+  }
+  mkdirSync(workflowDir, { recursive: true });
+
+  const plist = generateInfoPlist(snipBin, maxResults);
+  writeFileSync(resolve(workflowDir, "info.plist"), plist, "utf-8");
+
+  console.log("Installed Alfred workflow: Snip Search");
+  console.log();
+  console.log(`  Keyword: snip`);
+  console.log(`  Location: ${workflowDir}`);
+  console.log();
+  console.log("Actions:");
+  console.log("  Enter        Copy snippet to clipboard");
+  console.log("  Cmd+Enter    Copy snippet to clipboard");
+  console.log("  Alt+Enter    Open snippet file (default app)");
+  console.log("  Ctrl+Enter   Reveal snippet in Finder");
+  console.log("  Space        Quick Look preview");
+  console.log();
+  console.log("Tip: Set max results with: snip config set alfred.maxResults 30");
+}
+
 export function createInstallCommand(program: Command): Command {
   return new Command("install")
     .description("Install integrations and extensions")
@@ -396,10 +749,7 @@ export function createInstallCommand(program: Command): Command {
         }
 
         case "alfred":
-          console.error(
-            "Alfred workflow installation coming soon. See: snip search --json",
-          );
-          process.exit(1);
+          installAlfredWorkflow();
           break;
 
         case "obsidian":

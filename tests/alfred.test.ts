@@ -32,9 +32,10 @@ print("hello")
     expect(item.title).toBe("Test Snippet");
     expect(item.subtitle).toContain("python");
     expect(item.subtitle).toContain("tags:");
-    expect(item.arg).toBe("/lib/snippets/test-snippet.md");
+    expect(item.arg).toBe('print("hello")');
     expect(item.mods.cmd.arg).toBe('print("hello")');
     expect(item.mods.alt.arg).toBe("/lib/snippets/test-snippet.md");
+    expect(item.mods.ctrl.arg).toBe("/lib/snippets/test-snippet.md");
     expect(item.text.copy).toBe('print("hello")');
     expect(item.variables.snippet_slug).toBe("test-snippet");
     expect(item.variables.snippet_type).toBe("snippet");
