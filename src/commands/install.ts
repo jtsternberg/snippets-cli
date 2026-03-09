@@ -416,7 +416,23 @@ function findExistingWorkflow(workflowsDir: string): string | null {
 }
 
 function generateInfoPlist(snipBin: string, maxResults: number): string {
-  const script = `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"\n${snipBin} search "{query}" --json -n ${maxResults}`;
+  const searchScript = [
+    `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"`,
+    `${snipBin} search "{query}" --json -n ${maxResults}`,
+  ].join("\n");
+  const captureScript = [
+    `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"`,
+    `echo -n "$1" | pbcopy`,
+    `output=$(${snipBin} add --from-clipboard 2>&1)`,
+    `filepath=$(echo "$output" | grep "^Created:" | sed 's/Created: //')`,
+    `echo -n "$filepath"`,
+  ].join("\n");
+  const keywordCaptureScript = [
+    `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"`,
+    `output=$(${snipBin} add --from-clipboard 2>&1)`,
+    `filepath=$(echo "$output" | grep "^Created:" | sed 's/Created: //')`,
+    `echo -n "$filepath"`,
+  ].join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -428,6 +444,71 @@ function generateInfoPlist(snipBin: string, maxResults: number): string {
 	<string>Productivity</string>
 	<key>connections</key>
 	<dict>
+		<key>keyword-capture</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>keyword-capture-script</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>keyword-capture-script</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>capture-openfile</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>capture-trigger</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>capture-script</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>capture-openfile</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>capture-notify</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>capture-script</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>capture-openfile</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>script-filter</key>
 		<array>
 			<dict>
@@ -572,7 +653,7 @@ function generateInfoPlist(snipBin: string, maxResults: number): string {
 				<key>runningsubtext</key>
 				<string>Searching snippets…</string>
 				<key>script</key>
-				<string>${escapeXml(script)}</string>
+				<string>${escapeXml(searchScript)}</string>
 				<key>scriptargtype</key>
 				<integer>0</integer>
 				<key>scriptfile</key>
@@ -580,7 +661,7 @@ function generateInfoPlist(snipBin: string, maxResults: number): string {
 				<key>subtext</key>
 				<string>Search your snippet library</string>
 				<key>title</key>
-				<string>Search Snippets</string>
+				<string>Snip: Search Snippets</string>
 				<key>type</key>
 				<integer>5</integer>
 				<key>withspace</key>
@@ -592,6 +673,130 @@ function generateInfoPlist(snipBin: string, maxResults: number): string {
 			<string>script-filter</string>
 			<key>version</key>
 			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>acceptsfiles</key>
+				<false/>
+				<key>acceptsmulti</key>
+				<integer>0</integer>
+				<key>acceptstext</key>
+				<true/>
+				<key>acceptsurls</key>
+				<false/>
+				<key>name</key>
+				<string>Snip: Save Snippet</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.universalaction</string>
+			<key>uid</key>
+			<string>capture-trigger</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string>${escapeXml(captureScript)}</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>5</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>capture-script</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>openwith</key>
+				<string></string>
+				<key>sourcefile</key>
+				<string>{query}</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.openfile</string>
+			<key>uid</key>
+			<string>capture-openfile</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>lastpathcomponent</key>
+				<false/>
+				<key>onlyshowifquerypopulated</key>
+				<false/>
+				<key>removeextension</key>
+				<false/>
+				<key>text</key>
+				<string>{query}</string>
+				<key>title</key>
+				<string>Snip: Snippet Saved</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.notification</string>
+			<key>uid</key>
+			<string>capture-notify</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>2</integer>
+				<key>keyword</key>
+				<string>snipsaveclipboard</string>
+				<key>subtext</key>
+				<string>Save clipboard contents as a snippet</string>
+				<key>text</key>
+				<string>Snip: Save Snippet from Clipboard</string>
+				<key>withspace</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>keyword-capture</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string>${escapeXml(keywordCaptureScript)}</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>5</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>keyword-capture-script</string>
+			<key>version</key>
+			<integer>2</integer>
 		</dict>
 	</array>
 	<key>readme</key>
@@ -632,6 +837,48 @@ function generateInfoPlist(snipBin: string, maxResults: number): string {
 			<real>100</real>
 			<key>ypos</key>
 			<real>150</real>
+		</dict>
+		<key>capture-trigger</key>
+		<dict>
+			<key>xpos</key>
+			<real>100</real>
+			<key>ypos</key>
+			<real>500</real>
+		</dict>
+		<key>capture-script</key>
+		<dict>
+			<key>xpos</key>
+			<real>350</real>
+			<key>ypos</key>
+			<real>500</real>
+		</dict>
+		<key>capture-openfile</key>
+		<dict>
+			<key>xpos</key>
+			<real>600</real>
+			<key>ypos</key>
+			<real>500</real>
+		</dict>
+		<key>capture-notify</key>
+		<dict>
+			<key>xpos</key>
+			<real>850</real>
+			<key>ypos</key>
+			<real>500</real>
+		</dict>
+		<key>keyword-capture</key>
+		<dict>
+			<key>xpos</key>
+			<real>100</real>
+			<key>ypos</key>
+			<real>650</real>
+		</dict>
+		<key>keyword-capture-script</key>
+		<dict>
+			<key>xpos</key>
+			<real>350</real>
+			<key>ypos</key>
+			<real>650</real>
 		</dict>
 	</dict>
 	<key>userconfigurationconfig</key>
