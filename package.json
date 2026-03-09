@@ -1,0 +1,44 @@
+{
+  "name": "snippets-cli",
+  "version": "0.1.0",
+  "description": "CLI snippet manager with semantic search and Obsidian-compatible markdown storage",
+  "type": "module",
+  "bin": {
+    "snip": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "snippets",
+    "cli",
+    "markdown",
+    "obsidian",
+    "semantic-search"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@commander-js/extra-typings": "^14.0.0",
+    "@inquirer/prompts": "^7.10.1",
+    "chalk": "^5.6.2",
+    "cli-highlight": "^2.1.11",
+    "clipboardy": "^5.3.1",
+    "commander": "^14.0.3",
+    "gray-matter": "^4.0.3",
+    "ora": "^9.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
