@@ -10,7 +10,8 @@ export const runCommand = new Command("run")
   .argument("<name>", "Prompt snippet name or slug")
   .option("--var <vars...>", "Variable values as key=value pairs")
   .option("--no-copy", "Don't copy to clipboard, only print to stdout")
-  .action(async (name: string, opts: { var?: string[]; copy?: boolean }) => {
+  .option("--skip-vars", "Leave unfilled variables as {{name}} without prompting")
+  .action(async (name: string, opts: { var?: string[]; copy?: boolean; skipVars?: boolean }) => {
     const result = resolveSnippet(name);
 
     if (!result) {
@@ -72,7 +73,7 @@ export const runCommand = new Command("run")
     // Check for missing variables
     const missingVars = [...requiredVars].filter((v) => !providedVars.has(v));
 
-    if (missingVars.length > 0) {
+    if (missingVars.length > 0 && !opts.skipVars) {
       // Interactive mode: prompt for missing variables if TTY
       if (process.stdin.isTTY) {
         for (const varName of missingVars) {
