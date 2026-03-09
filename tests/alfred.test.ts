@@ -37,6 +37,7 @@ print("hello")
     expect(item.mods.alt.arg).toBe("/lib/snippets/test-snippet.md");
     expect(item.mods.ctrl.arg).toBe("/lib/snippets/test-snippet.md");
     expect(item.text.copy).toBe('print("hello")');
+    expect(item.icon).toEqual({ type: "fileicon", path: "/lib/snippets/test-snippet.md" });
     expect(item.variables.snippet_slug).toBe("test-snippet");
     expect(item.variables.snippet_type).toBe("snippet");
   });

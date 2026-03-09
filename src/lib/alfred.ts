@@ -7,7 +7,7 @@ interface AlfredItem {
   subtitle: string;
   arg: string;
   autocomplete: string;
-  icon?: { path: string };
+  icon?: { type?: string; path: string };
   mods: {
     cmd: { subtitle: string; arg: string };
     alt: { subtitle: string; arg: string };
@@ -39,6 +39,7 @@ export function formatAlfredResults(snippets: Snippet[]): AlfredOutput {
         subtitle,
         arg: codeContent,
         autocomplete: s.frontmatter.title || s.slug,
+        icon: { type: "fileicon", path: s.filePath },
         mods: {
           cmd: { subtitle: "Copy to clipboard", arg: codeContent },
           alt: { subtitle: "Open in editor", arg: s.filePath },
