@@ -943,6 +943,45 @@ function installAlfredWorkflow(): void {
   console.log("Tip: Set max results with: snip config set alfred.maxResults 30");
 }
 
+export async function installShellCompletions(program: Command, shell?: string): Promise<void> {
+  const targetShell = shell || detectShell();
+
+  if (!["bash", "zsh", "fish"].includes(targetShell)) {
+    console.error(`Unsupported shell: ${targetShell}. Supported: bash, zsh, fish`);
+    return;
+  }
+
+  const commands = introspectProgram(program);
+
+  let script: string;
+  switch (targetShell) {
+    case "zsh":
+      script = generateZshCompletions(commands);
+      break;
+    case "fish":
+      script = generateFishCompletions(commands);
+      break;
+    default:
+      script = generateBashCompletions(commands);
+      break;
+  }
+
+  const outPath = getCompletionPath(targetShell);
+  const outDir = resolve(outPath, "..");
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(outPath, script, "utf-8");
+
+  let zshSetupMsg: string | undefined;
+  if (targetShell === "zsh") {
+    const result = ensureZshrcSetup();
+    zshSetupMsg = result.message;
+  }
+
+  console.log(`Installed ${targetShell} completions for snip.`);
+  console.log();
+  console.log(getSourceInstruction(targetShell, outPath, zshSetupMsg));
+}
+
 export function createInstallCommand(program: Command): Command {
   return new Command("install")
     .description("Install integrations and extensions")
@@ -954,44 +993,13 @@ export function createInstallCommand(program: Command): Command {
     .action(async (integration: string, shell?: string) => {
       switch (integration) {
         case "completions": {
-          const targetShell = shell || detectShell();
-
-          if (!["bash", "zsh", "fish"].includes(targetShell)) {
+          if (shell && !["bash", "zsh", "fish"].includes(shell)) {
             console.error(
-              `Unsupported shell: ${targetShell}. Supported: bash, zsh, fish`,
+              `Unsupported shell: ${shell}. Supported: bash, zsh, fish`,
             );
             process.exit(1);
           }
-
-          const commands = introspectProgram(program);
-
-          let script: string;
-          switch (targetShell) {
-            case "zsh":
-              script = generateZshCompletions(commands);
-              break;
-            case "fish":
-              script = generateFishCompletions(commands);
-              break;
-            default:
-              script = generateBashCompletions(commands);
-              break;
-          }
-
-          const outPath = getCompletionPath(targetShell);
-          const outDir = resolve(outPath, "..");
-          mkdirSync(outDir, { recursive: true });
-          writeFileSync(outPath, script, "utf-8");
-
-          let zshSetupMsg: string | undefined;
-          if (targetShell === "zsh") {
-            const result = ensureZshrcSetup();
-            zshSetupMsg = result.message;
-          }
-
-          console.log(`Installed ${targetShell} completions for snip.`);
-          console.log();
-          console.log(getSourceInstruction(targetShell, outPath, zshSetupMsg));
+          await installShellCompletions(program, shell);
           break;
         }
 

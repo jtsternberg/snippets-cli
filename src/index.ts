@@ -16,6 +16,7 @@ import { runCommand } from "./commands/run.js";
 import { linkCommand } from "./commands/link.js";
 import { importCommand } from "./commands/import.js";
 import { createInstallCommand } from "./commands/install.js";
+import { createUpgradeCommand } from "./commands/upgrade.js";
 
 const program = new Command();
 
@@ -42,5 +43,6 @@ program.addCommand(runCommand);
 program.addCommand(linkCommand);
 program.addCommand(importCommand);
 program.addCommand(createInstallCommand(program));
+program.addCommand(createUpgradeCommand(program));
 
 program.parseAsync(process.argv);
