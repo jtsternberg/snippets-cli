@@ -124,7 +124,8 @@ export const addCommand = new Command("add")
         "utf-8",
       );
 
-      const result = spawnSync(editor, [tmpFile], {
+      const [editorCmd, ...editorArgs] = editor.split(/\s+/);
+      const result = spawnSync(editorCmd, [...editorArgs, tmpFile], {
         stdio: "inherit",
       });
 

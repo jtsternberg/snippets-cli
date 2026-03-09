@@ -28,7 +28,8 @@ export const editCommand = new Command("edit")
     const editor = config.editor || process.env.EDITOR || "vi";
     const filePath = result.snippet.filePath;
 
-    const child = spawnSync(editor, [filePath], {
+    const [editorCmd, ...editorArgs] = editor.split(/\s+/);
+    const child = spawnSync(editorCmd, [...editorArgs, filePath], {
       stdio: "inherit",
     });
 
