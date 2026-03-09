@@ -1,13 +1,15 @@
 import { Command } from "commander";
 import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
 import { highlight } from "cli-highlight";
 
 export const showCommand = new Command("show")
   .description("Display a snippet in the terminal")
   .argument("<name>", "Snippet name or slug")
-  .option("--raw", "Show raw markdown without highlighting")
-  .action(async (name: string, opts: { raw?: boolean }) => {
+  .option("--raw", "Output full file contents (frontmatter + body)")
+  .option("--code", "Output only the code block content (no fences)")
+  .action(async (name: string, opts: { raw?: boolean; code?: boolean }) => {
     const result = resolveSnippet(name);
 
     if (!result) {
@@ -23,6 +25,19 @@ export const showCommand = new Command("show")
     }
 
     const { snippet } = result;
+
+    // Code mode: output just the code block content (no fences, no header)
+    if (opts.code) {
+      process.stdout.write(extractCopyContent(snippet));
+      return;
+    }
+
+    // Raw mode: output the full file contents as-is (pipeable)
+    if (opts.raw) {
+      const { readFileSync } = await import("node:fs");
+      process.stdout.write(readFileSync(snippet.filePath, "utf-8"));
+      return;
+    }
 
     // Header
     console.log(`# ${snippet.frontmatter.title}`);
@@ -42,13 +57,9 @@ export const showCommand = new Command("show")
     console.log("");
 
     // Content
-    if (opts.raw) {
+    try {
+      console.log(highlight(snippet.body, { language: "markdown" }));
+    } catch {
       console.log(snippet.body);
-    } else {
-      try {
-        console.log(highlight(snippet.body, { language: "markdown" }));
-      } catch {
-        console.log(snippet.body);
-      }
     }
   });
