@@ -1,8 +1,24 @@
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { loadConfig } from "./config.js";
 
 const execFileAsync = promisify(execFile);
+
+/** Run a qmd command with all output suppressed. Resolves when process exits. */
+function spawnSilent(
+  args: string[],
+  timeout: number,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const child = spawn("qmd", args, {
+      stdio: "ignore",
+      timeout,
+      env: { ...process.env, NO_COLOR: "1" },
+    });
+    child.on("close", () => resolve());
+    child.on("error", () => resolve());
+  });
+}
 
 let qmdWarningShown = false;
 
@@ -61,30 +77,14 @@ export async function registerCollection(
 
 export async function embed(): Promise<void> {
   if (!(await ensureQmd())) return;
-
   const config = loadConfig();
-  try {
-    await execFileAsync("qmd", ["embed", "-c", config.qmd.collectionName], {
-      timeout: 120000,
-      env: { ...process.env, NO_COLOR: "1" },
-    });
-  } catch {
-    // qmd embed can fail with escape codes in stderr — silently ignore
-  }
+  await spawnSilent(["embed", "-c", config.qmd.collectionName], 120000);
 }
 
 export async function update(): Promise<void> {
   if (!(await ensureQmd())) return;
-
   const config = loadConfig();
-  try {
-    await execFileAsync("qmd", ["update", "-c", config.qmd.collectionName], {
-      timeout: 60000,
-      env: { ...process.env, NO_COLOR: "1" },
-    });
-  } catch {
-    // qmd update can fail with escape codes in stderr — silently ignore
-  }
+  await spawnSilent(["update", "-c", config.qmd.collectionName], 60000);
 }
 
 export async function search(
