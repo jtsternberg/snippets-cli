@@ -1,5 +1,6 @@
 export interface SnippetFrontmatter {
   title: string;
+  description: string;
   tags: string[];
   aliases: string[];
   language: string;

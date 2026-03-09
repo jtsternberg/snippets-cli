@@ -5,6 +5,7 @@ import { basename } from "node:path";
 
 const FRONTMATTER_DEFAULTS: SnippetFrontmatter = {
   title: "",
+  description: "",
   tags: [],
   aliases: [],
   language: "",
@@ -57,6 +58,7 @@ export function serializeSnippet(
   const clean: Record<string, unknown> = {};
 
   if (frontmatter.title) clean.title = frontmatter.title;
+  if (frontmatter.description) clean.description = frontmatter.description;
   if (frontmatter.tags?.length) clean.tags = frontmatter.tags;
   if (frontmatter.aliases?.length) clean.aliases = frontmatter.aliases;
   if (frontmatter.language) clean.language = frontmatter.language;

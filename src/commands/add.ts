@@ -6,12 +6,13 @@ import { getLibraryPath, loadConfig } from "../lib/config.js";
 import {
   createNewFrontmatter,
   writeSnippetFile,
+  parseSnippetFile,
 } from "../lib/frontmatter.js";
 import { uniqueSlug } from "../lib/slug.js";
 import { readClipboard } from "../lib/clipboard.js";
 import { EXIT_CODES } from "../types/index.js";
 import { updateAndEmbed } from "../lib/qmd.js";
-import { detectLanguage, suggestTags, generateTitle } from "../lib/llm.js";
+import { detectLanguage, suggestTags, generateTitle, enrichSnippet } from "../lib/llm.js";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { writeFileSync, readFileSync, unlinkSync } from "node:fs";
@@ -55,6 +56,12 @@ export const addCommand = new Command("add")
           language = detected;
           console.log(`  Auto-detected language: ${language}`);
         }
+      }
+
+      // Infer type from detected language if user didn't specify
+      if (!opts.type && language === "prompt" && config.types.includes("prompts")) {
+        type = "prompts";
+        console.log(`  Auto-selected type: ${type}`);
       }
 
       if (tags.length === 0) {
@@ -166,6 +173,40 @@ export const addCommand = new Command("add")
     console.log(`  Title: ${title}`);
     if (language) console.log(`  Language: ${language}`);
     if (tags.length) console.log(`  Tags: ${tags.join(", ")}`);
+
+    // LLM enrichment: fill in any missing metadata
+    let currentPath = filePath;
+    const enriched = await enrichSnippet(frontmatter, content);
+    if (Object.keys(enriched).length > 0) {
+      const snippet = parseSnippetFile(currentPath);
+      const updatedFm = { ...snippet.frontmatter, ...enriched };
+
+      // If enrichment detected prompt language, move to prompts/ dir
+      if (
+        enriched.language === "prompt" &&
+        !opts.type &&
+        type !== "prompts" &&
+        config.types.includes("prompts")
+      ) {
+        const { unlinkSync } = await import("node:fs");
+        const newType = "prompts";
+        const newTypeDir = resolve(libPath, newType);
+        mkdirSync(newTypeDir, { recursive: true });
+        const newPath = resolve(newTypeDir, `${slug}.md`);
+        updatedFm.type = newType;
+        writeSnippetFile(newPath, updatedFm, snippet.content);
+        unlinkSync(currentPath);
+        currentPath = newPath;
+        console.log(`  Moved to: ${newPath}`);
+      } else {
+        writeSnippetFile(currentPath, updatedFm, snippet.content);
+      }
+
+      if (enriched.description) console.log(`  Description: ${enriched.description}`);
+      if (enriched.aliases?.length) console.log(`  Aliases: ${enriched.aliases.join(", ")}`);
+      if (enriched.language && !language) console.log(`  Auto-detected language: ${enriched.language}`);
+      if (enriched.tags?.length && !tags.length) console.log(`  Suggested tags: ${enriched.tags.join(", ")}`);
+    }
 
     // qmd post-hook: update index
     await updateAndEmbed();

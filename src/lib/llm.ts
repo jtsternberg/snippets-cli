@@ -1,4 +1,5 @@
 import { loadConfig } from "./config.js";
+import type { SnippetFrontmatter } from "../types/index.js";
 
 export interface LlmResponse {
   text: string;
@@ -129,6 +130,27 @@ ${content.slice(0, 1000)}`;
     .slice(0, 80);
 }
 
+export async function generateAliases(
+  title: string,
+  content: string,
+): Promise<string[]> {
+  const prompt = `Generate 2-4 short alternative names or keywords someone might search for to find this snippet. These should be different phrasings, abbreviations, or related terms — NOT the title itself.
+
+Respond with ONLY a comma-separated list, nothing else.
+
+Title: ${title}
+Content:
+${content.slice(0, 500)}`;
+
+  const result = await callLlm(prompt);
+  if (!result) return [];
+
+  return result
+    .split(",")
+    .map((a) => a.trim().toLowerCase().replace(/[^a-z0-9 -]/g, ""))
+    .filter((a) => a.length > 0 && a.length < 50);
+}
+
 export async function generateDescription(content: string): Promise<string | null> {
   const prompt = `Write a one-line description of what this code does. Keep it under 100 characters. Respond with ONLY the description.
 
@@ -139,4 +161,61 @@ ${content.slice(0, 1000)}`;
   if (!result) return null;
 
   return result.replace(/\.+$/, "").trim().slice(0, 100);
+}
+
+/**
+ * Enrich a snippet's frontmatter by filling in any fields the user didn't provide.
+ * Runs LLM calls in parallel for speed. Returns updated frontmatter fields only.
+ */
+export async function enrichSnippet(
+  frontmatter: SnippetFrontmatter,
+  content: string,
+): Promise<Partial<SnippetFrontmatter>> {
+  if (!(await isOllamaAvailable())) return {};
+
+  const updates: Partial<SnippetFrontmatter> = {};
+  const tasks: Promise<void>[] = [];
+
+  if (!frontmatter.description) {
+    tasks.push(
+      generateDescription(content).then((desc) => {
+        if (desc) updates.description = desc;
+      }),
+    );
+  }
+
+  if (frontmatter.aliases.length === 0) {
+    tasks.push(
+      generateAliases(frontmatter.title, content).then((aliases) => {
+        if (aliases.length > 0) updates.aliases = aliases;
+      }),
+    );
+  }
+
+  if (!frontmatter.language) {
+    tasks.push(
+      detectLanguage(content).then((lang) => {
+        if (lang && lang !== "unknown") updates.language = lang;
+      }),
+    );
+  }
+
+  if (frontmatter.tags.length === 0) {
+    tasks.push(
+      suggestTags(content).then((tags) => {
+        if (tags.length > 0) updates.tags = tags;
+      }),
+    );
+  }
+
+  if (!frontmatter.title || frontmatter.title.startsWith("untitled-")) {
+    tasks.push(
+      generateTitle(content).then((title) => {
+        if (title) updates.title = title;
+      }),
+    );
+  }
+
+  await Promise.all(tasks);
+  return updates;
 }
