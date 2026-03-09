@@ -66,10 +66,10 @@ export async function embed(): Promise<void> {
   try {
     await execFileAsync("qmd", ["embed", "-c", config.qmd.collectionName], {
       timeout: 120000,
+      env: { ...process.env, NO_COLOR: "1" },
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`qmd embed warning: ${message}`);
+  } catch {
+    // qmd embed can fail with escape codes in stderr — silently ignore
   }
 }
 
@@ -80,10 +80,10 @@ export async function update(): Promise<void> {
   try {
     await execFileAsync("qmd", ["update", "-c", config.qmd.collectionName], {
       timeout: 60000,
+      env: { ...process.env, NO_COLOR: "1" },
     });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`qmd update warning: ${message}`);
+  } catch {
+    // qmd update can fail with escape codes in stderr — silently ignore
   }
 }
 
