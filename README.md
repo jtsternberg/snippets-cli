@@ -80,7 +80,7 @@ Config file: `~/.config/snip/config.json`
 | `defaultType` | Default type for new snippets | — |
 | `editor` | Editor for `snip edit` (falls back to `$EDITOR`) | — |
 | `llm.provider` | LLM provider | `"ollama"` |
-| `llm.ollamaModel` | Ollama model | `"llama3.1"` |
+| `llm.ollamaModel` | Ollama model | `"qwen2.5-coder:7b"` |
 | `qmd.collectionName` | qmd collection name | — |
 | `alfred.maxResults` | Max Alfred results | — |
 
@@ -166,7 +166,7 @@ Install [Ollama](https://ollama.ai) for auto-enrichment (language detection, tag
 
 ```bash
 brew install ollama
-ollama pull llama3.1
+ollama pull qwen2.5-coder:7b
 ```
 
 ## Development

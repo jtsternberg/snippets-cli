@@ -89,7 +89,7 @@ Global config at `~/.config/snip/config.json`:
   "editor": "$EDITOR",
   "llm": {
     "provider": "ollama",
-    "ollamaModel": "llama3.1",
+    "ollamaModel": "qwen2.5-coder:7b",
     "ollamaHost": "http://localhost:11434",
     "fallbackProvider": "openai",
     "openaiApiKey": null,

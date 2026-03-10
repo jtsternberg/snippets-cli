@@ -41,12 +41,12 @@ describe("findMissingKeys", () => {
   it("handles mix of top-level and nested missing keys", () => {
     const saved = {
       libraryPath: "/home/user/snippets",
-      llm: { provider: "ollama", ollamaModel: "llama3.1" },
+      llm: { provider: "ollama", ollamaModel: "qwen2.5-coder:7b" },
     };
     const defaults = {
       libraryPath: "/home/user/snippets",
       newTopLevel: "value",
-      llm: { provider: "ollama", ollamaModel: "llama3.1", newNested: "value" },
+      llm: { provider: "ollama", ollamaModel: "qwen2.5-coder:7b", newNested: "value" },
     };
     expect(findMissingKeys(saved, defaults)).toEqual([
       "newTopLevel",
@@ -76,7 +76,7 @@ describe("findMissingKeys", () => {
       editor: "vi",
       llm: {
         provider: "ollama",
-        ollamaModel: "llama3.1",
+        ollamaModel: "qwen2.5-coder:7b",
         ollamaHost: "http://localhost:11434",
         fallbackProvider: null,
         openaiApiKey: null,
@@ -92,7 +92,7 @@ describe("findMissingKeys", () => {
       editor: "vi",
       llm: {
         provider: "ollama",
-        ollamaModel: "llama3.1",
+        ollamaModel: "qwen2.5-coder:7b",
         ollamaHost: "http://localhost:11434",
         fallbackProvider: null,
         openaiApiKey: null,
