@@ -27,18 +27,11 @@ function introspectProgram(program: Command): CommandInfo[] {
       long: opt.long || "",
     }));
 
-    // Commands that take a snippet name as first arg
-    const snippetCommands = [
-      "show",
-      "copy",
-      "edit",
-      "rm",
-      "run",
-      "link",
-      "rename",
-      "export",
-    ];
-    const takesSnippetArg = snippetCommands.includes(name);
+    // Detect commands that take a snippet name/slug as first arg
+    const firstArg = cmd.registeredArguments[0];
+    const argDesc = firstArg?.description || "";
+    const takesSnippetArg = argDesc.toLowerCase().includes("snippet name")
+      || argDesc.toLowerCase().includes("snippet slug");
 
     commands.push({ name, description, options, takesSnippetArg });
   }
