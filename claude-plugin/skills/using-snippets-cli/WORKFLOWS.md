@@ -112,6 +112,35 @@ snip add --from-clipboard --title "React Query Hook"
 snip link react-query-hook --auto
 ```
 
+## LLM Provider Management
+
+Configure and switch between LLM providers for enrichment.
+
+```bash
+# View current provider configuration
+snip config:llm
+
+# Switch to a specific provider
+snip config:llm:provider gemini
+snip config:llm:key gemini YOUR_API_KEY
+
+# Use auto mode (tries CLI tools, then Ollama, then cloud APIs)
+snip config:llm:provider auto
+
+# Override provider for a single command
+snip add --from-clipboard --provider claude
+snip import ./script.sh --provider gemini-cli
+snip enrich my-snippet --provider ollama
+
+# Set a fallback provider
+snip config:llm:fallback ollama
+
+# Re-enrich existing snippets after switching providers
+snip enrich --all --dry-run        # Preview changes
+snip enrich --all                  # Apply
+snip enrich --all --force          # Regenerate all metadata
+```
+
 ## Health Check and Maintenance
 
 Keep the library and toolchain in good shape.
