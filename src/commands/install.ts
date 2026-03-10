@@ -6,6 +6,7 @@ import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { loadConfig, getLibraryPath } from "../lib/config.js";
 import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../lib/obsidian.js";
+import { fmt, status } from "../lib/format.js";
 
 interface CommandInfo {
   name: string;
@@ -1021,12 +1022,30 @@ function installObsidian(): void {
   const hasCli = isObsidianCliAvailable();
   const vaultName = hasCli ? getVaultName(libraryPath) : null;
 
-  console.log(`Snippet library: ${libraryPath}`);
-  console.log();
+  // --- Vault ---
+  console.log(fmt.bold("Vault:"));
+  if (vaultName) {
+    console.log(status.ok(`Registered as "${vaultName}"`));
+    console.log(`      Opening vault...`);
+    execSync(`open -a Obsidian "${libraryPath}"`);
+  } else {
+    console.log(status.warn("Snippet library is not registered as a vault"));
+    console.log(`      Open Obsidian → Open another vault → Open folder as vault`);
+    console.log(`      Select: ${libraryPath}`);
+  }
 
-  // --- Actions ---
+  // --- CLI ---
+  console.log(fmt.bold("\nCLI:"));
+  if (hasCli) {
+    console.log(status.ok("Obsidian CLI is available"));
+  } else {
+    console.log(status.warn("Obsidian CLI not found"));
+    console.log(`      Settings → General → Command line interface → Enable`);
+    console.log(`      Then follow on-screen instructions to add it to your PATH.`);
+  }
 
-  // Install .base files for each type directory
+  // --- Base views ---
+  console.log(fmt.bold("\nBase views:"));
   const baseTemplate = readFileSync(resolve(__dirname, "../assets/sample.base"), "utf-8");
   for (const type of config.types) {
     const typeDir = resolve(libraryPath, type);
@@ -1034,62 +1053,59 @@ function installObsidian(): void {
     const label = type.charAt(0).toUpperCase() + type.slice(1);
     const basePath = resolve(typeDir, `${label}.base`);
     if (existsSync(basePath)) {
-      console.log(`  OK  ${label}.base`);
+      console.log(status.ok(`${label}.base`));
     } else {
       writeFileSync(basePath, baseTemplate.replace("{{TYPE}}", type), "utf-8");
-      console.log(`  ++  ${label}.base (created)`);
+      console.log(status.ok(`${label}.base (created)`));
     }
   }
 
-  if (vaultName) {
-    console.log();
-    console.log(`Opening vault "${vaultName}"...`);
-    execSync(`open -a Obsidian "${libraryPath}"`);
-  }
-
-  // --- Setup steps (only if something is missing) ---
-
-  if (!vaultName || !hasCli) {
-    console.log();
-    console.log("Setup:");
-    let step = 1;
-
-    if (!vaultName) {
-      console.log(`  ${step++}. Open your snippet library as a vault in Obsidian:`);
-      console.log("     Open Obsidian → Open another vault → Open folder as vault");
-      console.log(`     Select: ${libraryPath}`);
-    }
-
-    if (!hasCli) {
-      console.log(`  ${step++}. Enable the Obsidian CLI:`);
-      console.log("     Settings → General → Command line interface → Enable");
-      console.log("     Then follow on-screen instructions to add it to your PATH.");
+  // --- Settings ---
+  console.log(fmt.bold("\nSettings:"));
+  const appJsonPath = resolve(libraryPath, ".obsidian", "app.json");
+  let appSettings: Record<string, unknown> = {};
+  if (existsSync(appJsonPath)) {
+    try {
+      appSettings = JSON.parse(readFileSync(appJsonPath, "utf-8"));
+    } catch {
+      // ignore parse errors
     }
   }
 
-  // --- Reference ---
+  // Wikilinks: OK if useMarkdownLinks is absent or false
+  const useMarkdownLinks = appSettings.useMarkdownLinks;
+  if (useMarkdownLinks === undefined || useMarkdownLinks === false) {
+    console.log(status.ok("Use [[Wikilinks]] enabled"));
+  } else {
+    console.log(status.warn("Wikilinks disabled — enable in Files & Links → Use [[Wikilinks]]"));
+  }
 
-  console.log();
-  console.log("Recommended settings:");
-  console.log('  - Files & Links → Use [[Wikilinks]] (on by default)');
-  console.log('  - Files & Links → Default location for new notes → "In the folder specified below"');
-  console.log('  - Set the folder to your default snippet type (e.g. "snippets")');
-  console.log();
-  console.log("Recommended plugins:");
-  console.log("  - Obsidian Git — auto-commit and sync via git");
-  console.log("  - Dataview — query snippets by frontmatter fields");
-  console.log("  - Tag Wrangler — manage and rename tags");
-  console.log("  - Templater — create snippet templates");
+  // New note location: check attachmentFolderPath matches a snippet type
+  const attachmentFolder = appSettings.attachmentFolderPath as string | undefined;
+  if (attachmentFolder && config.types.includes(attachmentFolder)) {
+    console.log(status.ok(`Default note location: ${attachmentFolder}/`));
+  } else if (attachmentFolder) {
+    console.log(status.info(`Default note location: ${attachmentFolder}/ (not a snippet type)`));
+  } else {
+    console.log(status.warn('Default note location not set — set in Files & Links → Default location for new notes'));
+  }
 
+  // --- Plugins ---
+  console.log(fmt.bold("\nRecommended plugins:"));
+  console.log(status.info("Obsidian Git — auto-commit and sync via git"));
+  console.log(status.info("Dataview — query snippets by frontmatter fields"));
+  console.log(status.info("Tag Wrangler — manage and rename tags"));
+  console.log(status.info("Templater — create snippet templates"));
+
+  // --- CLI commands reference ---
   if (hasCli) {
     const vaultFlag = vaultName ? ` vault="${vaultName}"` : "";
-    console.log();
-    console.log("CLI commands:");
-    console.log(`  obsidian search query=<term>${vaultFlag}`);
-    console.log(`  obsidian tags counts${vaultFlag}`);
-    console.log(`  obsidian backlinks file=<name>${vaultFlag}`);
-    console.log(`  obsidian orphans${vaultFlag}`);
-    console.log(`  obsidian unresolved${vaultFlag}`);
+    console.log(fmt.bold("\nCLI commands:"));
+    console.log(status.info(`obsidian search query=<term>${vaultFlag}`));
+    console.log(status.info(`obsidian tags counts${vaultFlag}`));
+    console.log(status.info(`obsidian backlinks file=<name>${vaultFlag}`));
+    console.log(status.info(`obsidian orphans${vaultFlag}`));
+    console.log(status.info(`obsidian unresolved${vaultFlag}`));
   }
 }
 
