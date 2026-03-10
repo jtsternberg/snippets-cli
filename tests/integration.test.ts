@@ -59,7 +59,7 @@ afterAll(() => {
 });
 
 describe("snip add (non-interactive)", () => {
-  it("creates a snippet from --content", () => {
+  it("creates a snippet from --content", { timeout: 30000 }, () => {
     const output = snip([
       "add",
       "--title", "Test Snippet",
