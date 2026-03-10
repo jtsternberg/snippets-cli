@@ -18,14 +18,20 @@ CLI snippet manager with semantic search, Obsidian-compatible markdown storage, 
 ## Installation
 
 ```bash
+npm install -g @jtsternberg/snip
+```
+
+Requires **Node.js 22+**.
+
+### From source
+
+```bash
 git clone https://github.com/jtsternberg/snippets-cli.git
 cd snippets-cli
 npm install
 npm run build
 npm link
 ```
-
-Requires **Node.js 22+**.
 
 ## Quick Start
 
