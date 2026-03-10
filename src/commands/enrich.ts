@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
 
 import { writeSnippetFile } from "../lib/frontmatter.js";
-import { enrichSnippet, isLlmAvailable, setProviderOverride } from "../lib/llm.js";
+import { enrichSnippet, isLlmAvailable, setProviderOverride, setDebugMode } from "../lib/llm.js";
 import { EXIT_CODES } from "../types/index.js";
 import type { Snippet, LlmProviderName } from "../types/index.js";
 
@@ -14,13 +14,16 @@ export const enrichCommand = new Command("enrich")
   .option("--type <type>", "Filter by snippet type (with --all)")
   .option("--dry-run", "Show what would be updated without writing")
   .option("--provider <provider>", "LLM provider override (ollama, gemini, claude, openai, auto)")
+  .option("--debug", "Log LLM provider commands and responses")
   .action(async (name: string | undefined, opts: {
     all?: boolean;
     force?: boolean;
     type?: string;
     dryRun?: boolean;
     provider?: string;
+    debug?: boolean;
   }) => {
+    if (opts.debug) setDebugMode(true);
     if (opts.provider) {
       setProviderOverride(opts.provider as LlmProviderName);
     }

@@ -8,8 +8,10 @@ import { ClaudeProvider } from "./claude.js";
 import { ClaudeCliProvider } from "./claude-cli.js";
 import { OpenAIProvider } from "./openai.js";
 import { OpenAICliProvider } from "./openai-cli.js";
+import { isDebugMode as _isDebugMode } from "./debug.js";
 
 export type { LlmProvider } from "./types.js";
+export { setDebugMode, isDebugMode } from "./debug.js";
 
 const providers: Record<string, LlmProvider> = {
   ollama: new OllamaProvider(),
@@ -78,7 +80,13 @@ export async function callLlm(prompt: string): Promise<string | null> {
 
   for (const provider of chain) {
     if (await provider.isAvailable()) {
+      if (_isDebugMode()) {
+        console.error(`[debug] Using provider: ${provider.name}`);
+      }
       const result = await provider.generate(prompt);
+      if (_isDebugMode()) {
+        console.error(`[debug] Response (${result?.length ?? 0} chars): ${result ?? "(null)"}`);
+      }
       if (result) return result;
     }
   }

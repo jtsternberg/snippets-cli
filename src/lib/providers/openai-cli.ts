@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import { loadConfig } from "../config.js";
 import type { LlmProvider } from "./types.js";
+import { cliExec } from "./cli-exec.js";
 
 function isCodexCliAvailable(): boolean {
   try {
@@ -21,15 +22,11 @@ export class OpenAICliProvider implements LlmProvider {
   async generate(prompt: string): Promise<string | null> {
     if (!isCodexCliAvailable()) return null;
     const config = loadConfig();
-    try {
-      const escaped = prompt.replace(/'/g, "'\\''");
-      const result = execSync(
-        `codex exec --model ${config.llm.codexCliModel} '${escaped}'`,
-        { timeout: 60_000, encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] },
-      );
-      return result?.trim() || null;
-    } catch {
-      return null;
-    }
+    return cliExec({
+      cmd: "codex",
+      args: ["exec", "--model", config.llm.codexCliModel],
+      prompt,
+      timeout: 60_000,
+    });
   }
 }

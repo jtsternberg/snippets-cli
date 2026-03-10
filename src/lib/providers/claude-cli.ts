@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import { loadConfig } from "../config.js";
 import type { LlmProvider } from "./types.js";
+import { cliExec } from "./cli-exec.js";
 
 function isClaudeCliAvailable(): boolean {
   try {
@@ -21,15 +22,11 @@ export class ClaudeCliProvider implements LlmProvider {
   async generate(prompt: string): Promise<string | null> {
     if (!isClaudeCliAvailable()) return null;
     const config = loadConfig();
-    try {
-      const escaped = prompt.replace(/'/g, "'\\''");
-      const result = execSync(
-        `claude --model ${config.llm.claudeCliModel} -p '${escaped}'`,
-        { timeout: 45_000, encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] },
-      );
-      return result?.trim() || null;
-    } catch {
-      return null;
-    }
+    return cliExec({
+      cmd: "claude",
+      args: ["--model", config.llm.claudeCliModel, "-p"],
+      prompt,
+      timeout: 45_000,
+    });
   }
 }
