@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-03-10
+
 ### Added
 
 - **BYOL (Bring Your Own LLM)** — multi-provider support for metadata enrichment: Ollama (default), Gemini, Claude, and OpenAI, via API keys or CLI tools
@@ -15,7 +17,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `snip config:llm` subcommands: `config:llm:provider`, `config:llm:fallback`, `config:llm:key`, `config:llm:model`
 - `--provider` flag on `add`, `import`, and `enrich` commands for per-invocation LLM override
 - Auto-fallback provider chain (`auto` mode) that tries available providers in order
-- Pre-push checklist skill for auditing docs/artifacts before pushing
+- **Gist sync** — bidirectional GitHub Gist synchronization for snippets
+- `snip export --to-gist` to publish snippets as GitHub Gists
+- `snip import --from-gist` to import snippets from GitHub Gists
+- `snip sync` for bidirectional gist synchronization (`--push`, `--pull`, `--force`)
+- Dynamic config key completions for all shells
+- Spinner during LLM enrichment in `add` command
+- Language verification fact-check after LLM enrichment
+- Show enriched field details in `enrich` command output
+
+### Changed
+
+- LLM provider registry now derives valid providers dynamically
+- LLM enrichment runs before file creation for correct title/slug
+- Enrich command updates code fence language and moves prompts
+
+### Fixed
+
+- `enrich --force` now blanks title and language for full regeneration
+- Shell completion descriptions grouped by type directory with type/slug values
+- Escape colons in zsh completions for subcommand names
+- Include snippet type/directory in shell completion descriptions
 
 ## [0.1.1] - 2026-03-10
 
