@@ -69,7 +69,7 @@ snip show my-snippet               # Display in terminal
 | `snip rename <name> <new-name>` | Rename a snippet |
 | `snip run <name>` | Execute a snippet as a shell script |
 | `snip link <name>` | Create symlink to snippet |
-| `snip import <sources...>` | Import from files, globs, URLs, or gists (`--from-gist`) |
+| `snip import [sources...]` | Import from files, globs, URLs, or gists (`--from-gist`) |
 | `snip export [name]` | Export to JSON, Markdown, or GitHub Gist (`--to-gist`, `--public`) |
 | `snip sync` | Sync gist-linked snippets (`--push`, `--pull`, `--dry-run`) |
 | `snip config` | View or set configuration |

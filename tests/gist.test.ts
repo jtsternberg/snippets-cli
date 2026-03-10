@@ -3,7 +3,6 @@ import { execFileSync } from "node:child_process";
 import {
   mkdirSync,
   rmSync,
-  existsSync,
   readFileSync,
   writeFileSync,
 } from "node:fs";
@@ -79,16 +78,37 @@ function snipErr(args: string[]): string {
   }
 }
 
+function gistSnippetPath(): string {
+  return resolve(libDir, "snippets", "gist-test-snippet.md");
+}
+
+function readGistSnippet(): string {
+  return readFileSync(gistSnippetPath(), "utf-8");
+}
+
+function readStoredGistId(): string | null {
+  const match = readGistSnippet().match(/gist_id:\s*(\S+)/);
+  return match ? match[1] : null;
+}
+
 // Check gh availability synchronously at module load so it.skipIf works correctly
 let ghAvailable = false;
 try {
-  execFileSync("gh", ["auth", "status"], { stdio: "pipe" });
+  execFileSync("gh", ["auth", "status"], {
+    env: testEnv,
+    stdio: "pipe",
+  });
   ghAvailable = true;
 } catch {
   ghAvailable = false;
 }
 
 beforeAll(() => {
+  execFileSync("npm", ["run", "build"], {
+    cwd: process.cwd(),
+    encoding: "utf-8",
+  });
+
   // Create library dirs and config
   mkdirSync(resolve(libDir, "snippets"), { recursive: true });
   mkdirSync(resolve(libDir, "prompts"), { recursive: true });
@@ -142,20 +162,12 @@ describe("snip export --to-gist", () => {
     expect(output).toContain("Saved gist_id");
 
     // Verify gist_id was saved to frontmatter
-    const content = readFileSync(
-      resolve(libDir, "snippets", "gist-test-snippet.md"),
-      "utf-8",
-    );
+    const content = readGistSnippet();
     expect(content).toContain("gist_id:");
   });
 
   it.skipIf(!ghAvailable)("updates existing gist on re-export", { timeout: 30000 }, () => {
-    // gist_id should already be in frontmatter from previous test
-    const content = readFileSync(
-      resolve(libDir, "snippets", "gist-test-snippet.md"),
-      "utf-8",
-    );
-    if (!content.includes("gist_id:")) return;
+    expect(readStoredGistId()).toBeTruthy();
 
     const output = snip(["export", "gist-test-snippet", "--to-gist"]);
     expect(output).toContain("Updated gist:");
@@ -163,26 +175,40 @@ describe("snip export --to-gist", () => {
 });
 
 describe("snip sync", () => {
+  it("rejects --push with --pull", () => {
+    const err = snipErr(["sync", "--push", "--pull"]);
+    expect(err).toContain("Cannot use --push and --pull together.");
+  });
+
   it("reports no linked snippets when none have gist_id", () => {
-    // Create a fresh snippet without gist_id
-    snip([
-      "add",
-      "--title", "No Gist Snippet",
-      "--lang", "bash",
-      "--content", "echo no gist",
-    ]);
+    const originalContent = readGistSnippet();
+    const strippedContent = originalContent
+      .replace(/^gist_id:.*\n?/m, "")
+      .replace(/^gist_updated:.*\n?/m, "");
 
-    const output = snip(["sync"]);
-    expect(output).toContain("No snippets linked to gists");
+    writeFileSync(gistSnippetPath(), strippedContent, "utf-8");
 
-    // Clean up
-    snip(["rm", "no-gist-snippet", "--force"]);
+    try {
+      snip([
+        "add",
+        "--title", "No Gist Snippet",
+        "--lang", "bash",
+        "--content", "echo no gist",
+      ]);
+
+      const output = snip(["sync"]);
+      expect(output).toContain("No snippets linked to gists");
+
+      snip(["rm", "no-gist-snippet", "--force"]);
+    } finally {
+      writeFileSync(gistSnippetPath(), originalContent, "utf-8");
+    }
   });
 
   it.skipIf(!ghAvailable)("supports --dry-run flag", { timeout: 30000 }, () => {
     // This test only runs if there are gist-linked snippets
     const output = snip(["sync", "--dry-run"]);
-    expect(output).toMatch(/Sync complete:|No snippets linked/);
+    expect(output).toMatch(/Dry run:|No snippets linked/);
   });
 });
 
@@ -192,21 +218,22 @@ describe("snip import --from-gist", () => {
     expect(err).toContain("No sources specified");
   });
 
+  it("rejects positional sources together with --from-gist", () => {
+    const err = snipErr(["import", "README.md", "--from-gist", "abc123def456"]);
+    expect(err).toContain("Cannot use positional sources together with --from-gist.");
+  });
+
   it.skipIf(!ghAvailable)("imports files from a gist", { timeout: 30000 }, () => {
     // First export to get a gist URL
-    const content = readFileSync(
-      resolve(libDir, "snippets", "gist-test-snippet.md"),
-      "utf-8",
-    );
-    const gistIdMatch = content.match(/gist_id:\s*(\S+)/);
-    if (!gistIdMatch) return; // skip if no gist was created
+    const gistId = readStoredGistId();
+    expect(gistId).toBeTruthy();
 
     // Remove the snippet first so we can re-import
     snip(["rm", "gist-test-snippet", "--force"]);
 
     const output = snip([
       "import",
-      "--from-gist", gistIdMatch[1],
+      "--from-gist", gistId!,
       "--no-enrich",
     ]);
     expect(output).toContain("Imported:");

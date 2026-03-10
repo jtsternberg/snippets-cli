@@ -77,6 +77,11 @@ export const syncCommand = new Command("sync")
   .option("--pull", "Force pull gist changes to local")
   .option("--dry-run", "Show what would be synced without making changes")
   .action(async (opts: { push?: boolean; pull?: boolean; dryRun?: boolean }) => {
+    if (opts.push && opts.pull) {
+      console.error("Cannot use --push and --pull together.");
+      process.exit(EXIT_CODES.GENERAL_ERROR);
+    }
+
     const allSnippets = getAllSnippets();
     const linked = allSnippets.filter((s) => s.frontmatter.gist_id);
 
@@ -158,7 +163,11 @@ export const syncCommand = new Command("sync")
     const conflicts = results.filter((r) => r.action === "conflict").length;
     const upToDate = results.filter((r) => r.action === "up-to-date").length;
 
-    console.log(`\nSync complete: ${pushed} pushed, ${pulled} pulled, ${conflicts} conflicts, ${upToDate} up to date`);
+    if (opts.dryRun) {
+      console.log(`\nDry run: would push ${pushed}, would pull ${pulled}, ${conflicts} conflicts, ${upToDate} up to date`);
+    } else {
+      console.log(`\nSync complete: ${pushed} pushed, ${pulled} pulled, ${conflicts} conflicts, ${upToDate} up to date`);
+    }
 
     if (conflicts > 0) {
       process.exit(EXIT_CODES.GENERAL_ERROR);

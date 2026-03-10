@@ -104,12 +104,12 @@ export function extractCodeBlocks(
   content: string,
 ): Array<{ language: string; code: string }> {
   const blocks: Array<{ language: string; code: string }> = [];
-  const regex = /```(\w*)\n([\s\S]*?)```/g;
+  const regex = /```([^\n`]*)\n([\s\S]*?)```/g;
   let match;
 
   while ((match = regex.exec(content)) !== null) {
     blocks.push({
-      language: match[1] || "",
+      language: match[1].trim(),
       code: match[2].trimEnd(),
     });
   }

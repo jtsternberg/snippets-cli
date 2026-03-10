@@ -3,13 +3,13 @@ import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.
 import { EXIT_CODES, type Snippet } from "../types/index.js";
 import { readFileSync, writeFileSync, mkdtempSync, unlinkSync, rmdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { writeSnippetFile } from "../lib/frontmatter.js";
+import { writeSnippetFile, extractCopyContent } from "../lib/frontmatter.js";
 import { requireGh, gistFilename } from "../lib/gist.js";
 import { tmpdir } from "node:os";
 import { resolve as resolvePath } from "node:path";
 
 export const exportCommand = new Command("export")
-  .description("Export snippets to JSON or Markdown")
+  .description("Export snippets to JSON, Markdown, or GitHub Gists")
   .argument("[name]", "Snippet name or slug to export")
   .option("-f, --format <format>", "Output format: json or md", "json")
   .option("-t, --type <type>", "Filter by type")
@@ -101,19 +101,6 @@ function resolveSnippetsToExport(
   return snippets;
 }
 
-// --- Gist export ---
-
-function gistContent(snippet: Snippet): string {
-  // Extract code from fenced blocks
-  const blocks: string[] = [];
-  const regex = /```\w*\n([\s\S]*?)```/g;
-  let match;
-  while ((match = regex.exec(snippet.content)) !== null) {
-    blocks.push(match[1].trimEnd());
-  }
-  return blocks.length > 0 ? blocks.join("\n\n") : snippet.body;
-}
-
 async function exportToGist(
   name: string | undefined,
   opts: { type?: string; tag?: string; public?: boolean },
@@ -145,7 +132,7 @@ async function exportToGist(
 
     for (const s of snippets) {
       const tmpPath = resolvePath(tmpDir, gistFilename(s));
-      writeFileSync(tmpPath, gistContent(s), "utf-8");
+      writeFileSync(tmpPath, extractCopyContent(s), "utf-8");
       tmpFiles.push(tmpPath);
       args.push(tmpPath);
     }
@@ -180,7 +167,7 @@ function updateGist(snippet: Snippet): void {
   const tmpPath = resolvePath(tmpDir, gistFilename(snippet));
 
   try {
-    writeFileSync(tmpPath, gistContent(snippet), "utf-8");
+    writeFileSync(tmpPath, extractCopyContent(snippet), "utf-8");
     execFileSync("gh", ["gist", "edit", gistId, "--add", tmpPath], {
       stdio: "pipe",
     });

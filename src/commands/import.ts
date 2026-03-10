@@ -166,11 +166,18 @@ export const importCommand = new Command("import")
   .option("--no-enrich", "Skip LLM enrichment")
   .option("--from-gist <url-or-id>", "Import all files from a GitHub Gist")
   .action(async (sources: string[], opts) => {
+    const hasSources = Array.isArray(sources) && sources.length > 0;
+
+    if (opts.fromGist && hasSources) {
+      console.error("Cannot use positional sources together with --from-gist.");
+      process.exit(EXIT_CODES.GENERAL_ERROR);
+    }
+
     if (opts.fromGist) {
       return importFromGist(opts);
     }
 
-    if (!sources || sources.length === 0) {
+    if (!hasSources) {
       console.error("No sources specified. Provide files, URLs, or use --from-gist.");
       process.exit(EXIT_CODES.GENERAL_ERROR);
     }
@@ -287,10 +294,7 @@ async function importFromGist(opts: {
 
   const gistId = parseGistId(opts.fromGist);
   const gist = fetchGist(gistId);
-  // Use the gist's last-updated date as the sync baseline
-  const gistUpdated = gist.updatedAt
-    ? gist.updatedAt.slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
+  const syncBaseline = new Date().toISOString().slice(0, 10);
 
   if (gist.files.length === 0) {
     console.error("Gist has no files.");
@@ -324,7 +328,7 @@ async function importFromGist(opts: {
         ...parsed.frontmatter,
         type,
         gist_id: gistId,
-        gist_updated: gistUpdated,
+        gist_updated: syncBaseline,
         source: `https://gist.github.com/${gistId}`,
       });
       fm.tags = [...new Set([...fm.tags, ...tags])];
@@ -341,7 +345,7 @@ async function importFromGist(opts: {
         tags,
         type,
         gist_id: gistId,
-        gist_updated: gistUpdated,
+        gist_updated: syncBaseline,
         source: `https://gist.github.com/${gistId}`,
       });
 
