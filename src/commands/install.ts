@@ -1018,8 +1018,15 @@ function installObsidian(): void {
     process.exit(1);
   }
 
+  const hasCli = isObsidianCliAvailable();
+  const vaultName = hasCli ? getVaultName(libraryPath) : null;
+
+  console.log(`Snippet library: ${libraryPath}`);
+  console.log();
+
+  // --- Actions ---
+
   // Install .base files for each type directory
-  console.log("Obsidian Base views:");
   const baseTemplate = readFileSync(resolve(__dirname, "../assets/sample.base"), "utf-8");
   for (const type of config.types) {
     const typeDir = resolve(libraryPath, type);
@@ -1027,51 +1034,49 @@ function installObsidian(): void {
     const label = type.charAt(0).toUpperCase() + type.slice(1);
     const basePath = resolve(typeDir, `${label}.base`);
     if (existsSync(basePath)) {
-      console.log(`  OK  ${label}.base (already exists)`);
+      console.log(`  OK  ${label}.base`);
     } else {
       writeFileSync(basePath, baseTemplate.replace("{{TYPE}}", type), "utf-8");
       console.log(`  ++  ${label}.base (created)`);
     }
   }
-  console.log();
-
-  const hasCli = isObsidianCliAvailable();
-  const vaultName = hasCli ? getVaultName(libraryPath) : null;
-  let step = 1;
-
-  console.log("Obsidian Setup Guide");
-  console.log("====================");
-  console.log();
-  console.log(`Snippet library: ${libraryPath}`);
-  console.log();
 
   if (vaultName) {
+    console.log();
     console.log(`Opening vault "${vaultName}"...`);
     execSync(`open -a Obsidian "${libraryPath}"`);
-    console.log();
-  } else {
-    console.log(`Step ${step++}: Open your snippet library as a vault`);
-    console.log("  1. Open Obsidian");
-    console.log("  2. Click \"Open another vault\" (vault icon in bottom-left)");
-    console.log("  3. Click \"Open folder as vault\"");
-    console.log(`  4. Select: ${libraryPath}`);
-    console.log();
   }
 
-  if (!hasCli) {
-    console.log(`Step ${step++}: Enable the Obsidian CLI`);
-    console.log("  Settings → General → Command line interface → Enable");
-    console.log("  Then follow on-screen instructions to add it to your PATH.");
+  // --- Setup steps (only if something is missing) ---
+
+  if (!vaultName || !hasCli) {
     console.log();
+    console.log("Setup:");
+    let step = 1;
+
+    if (!vaultName) {
+      console.log(`  ${step++}. Open your snippet library as a vault in Obsidian:`);
+      console.log("     Open Obsidian → Open another vault → Open folder as vault");
+      console.log(`     Select: ${libraryPath}`);
+    }
+
+    if (!hasCli) {
+      console.log(`  ${step++}. Enable the Obsidian CLI:`);
+      console.log("     Settings → General → Command line interface → Enable");
+      console.log("     Then follow on-screen instructions to add it to your PATH.");
+    }
   }
 
-  console.log(`Step ${step++}: Recommended settings`);
-  console.log('  - Settings → Files & Links → Use [[Wikilinks]] → Enable (default)');
-  console.log('  - Settings → Files & Links → Default location for new notes → "In the folder specified below"');
+  // --- Reference ---
+
+  console.log();
+  console.log("Recommended settings:");
+  console.log('  - Files & Links → Use [[Wikilinks]] (on by default)');
+  console.log('  - Files & Links → Default location for new notes → "In the folder specified below"');
   console.log('  - Set the folder to your default snippet type (e.g. "snippets")');
   console.log();
-  console.log("Recommended community plugins:");
-  console.log("  - Obsidian Git — auto-commit and sync your snippets via git");
+  console.log("Recommended plugins:");
+  console.log("  - Obsidian Git — auto-commit and sync via git");
   console.log("  - Dataview — query snippets by frontmatter fields");
   console.log("  - Tag Wrangler — manage and rename tags");
   console.log("  - Templater — create snippet templates");
@@ -1079,7 +1084,7 @@ function installObsidian(): void {
   if (hasCli) {
     const vaultFlag = vaultName ? ` vault="${vaultName}"` : "";
     console.log();
-    console.log("Obsidian CLI commands for your snippets:");
+    console.log("CLI commands:");
     console.log(`  obsidian search query=<term>${vaultFlag}`);
     console.log(`  obsidian tags counts${vaultFlag}`);
     console.log(`  obsidian backlinks file=<name>${vaultFlag}`);
