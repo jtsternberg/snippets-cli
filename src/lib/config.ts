@@ -71,6 +71,24 @@ export function getLibraryPath(config?: SnipConfig): string {
   return resolve(cfg.libraryPath.replace(/^~/, homedir()));
 }
 
+export function getConfigKeys(): string[] {
+  const keys: string[] = [];
+  function walk(obj: Record<string, unknown>, prefix: string) {
+    for (const key of Object.keys(obj)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+      const val = obj[key];
+      if (val !== null && typeof val === "object" && !Array.isArray(val)) {
+        keys.push(path);
+        walk(val as Record<string, unknown>, path);
+      } else {
+        keys.push(path);
+      }
+    }
+  }
+  walk(getDefaultConfig() as unknown as Record<string, unknown>, "");
+  return keys;
+}
+
 export function updateConfig(
   updates: Partial<SnipConfig> & Record<string, unknown>,
 ): SnipConfig {
