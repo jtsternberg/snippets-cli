@@ -1137,57 +1137,98 @@ function isClaudeCodeAvailable(): boolean {
   }
 }
 
+const MARKETPLACE_NAME = "snippets-cli";
+const MARKETPLACE_REPO = "jtsternberg/snippets-cli";
+const PLUGIN_REF = `${MARKETPLACE_NAME}@${MARKETPLACE_NAME}`;
+const MARKETPLACE_DIR = resolve(homedir(), ".claude", "plugins", "marketplaces", MARKETPLACE_NAME);
+
+function isClaudePluginInstalled(): boolean {
+  try {
+    const settings = readFileSync(resolve(homedir(), ".claude", "settings.json"), "utf-8");
+    return settings.includes(PLUGIN_REF);
+  } catch {
+    return false;
+  }
+}
+
+function hasMarketplace(): boolean {
+  return existsSync(MARKETPLACE_DIR);
+}
+
+function runClaude(args: string): string {
+  return execSync(`claude ${args}`, {
+    encoding: "utf-8",
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+}
+
 function installClaudeCode(): void {
   if (!isClaudeCodeAvailable()) {
     console.error("Claude Code CLI not found on PATH.");
     console.error("Install it from: https://claude.ai/download");
     console.error();
     console.error("Or install the plugin manually inside Claude Code:");
-    console.error("  /plugin marketplace add jtsternberg/snippets-cli");
-    console.error("  /plugin install snippets-cli@snippets-cli");
+    console.error(`  /plugin marketplace add ${MARKETPLACE_REPO}`);
+    console.error(`  /plugin install ${PLUGIN_REF}`);
     process.exit(1);
   }
 
-  console.log(fmt.bold("Installing Claude Code plugin...\n"));
+  const alreadyInstalled = isClaudePluginInstalled();
+  const verb = alreadyInstalled ? "Updating" : "Installing";
+  console.log(fmt.bold(`${verb} Claude Code plugin...\n`));
 
-  // Add marketplace
-  console.log("Adding marketplace...");
-  try {
-    execSync("claude plugin marketplace add jtsternberg/snippets-cli", {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    console.log(status.ok("Marketplace added"));
-  } catch (err) {
-    const msg = err instanceof Error ? (err as { stderr?: string }).stderr || err.message : String(err);
-    if (msg.includes("already")) {
-      console.log(status.ok("Marketplace already registered"));
-    } else {
+  // Add or update marketplace
+  if (hasMarketplace()) {
+    console.log("Updating marketplace...");
+    try {
+      runClaude(`plugin marketplace update ${MARKETPLACE_NAME}`);
+      console.log(status.ok("Marketplace updated"));
+    } catch (err) {
+      const msg = err instanceof Error ? (err as { stderr?: string }).stderr || err.message : String(err);
+      console.error(status.warn(`Failed to update marketplace: ${msg}`));
+      process.exit(1);
+    }
+  } else {
+    console.log("Adding marketplace...");
+    try {
+      runClaude(`plugin marketplace add ${MARKETPLACE_REPO}`);
+      console.log(status.ok("Marketplace added"));
+    } catch (err) {
+      const msg = err instanceof Error ? (err as { stderr?: string }).stderr || err.message : String(err);
       console.error(status.warn(`Failed to add marketplace: ${msg}`));
       process.exit(1);
     }
   }
 
-  // Install plugin
-  console.log("Installing plugin...");
-  try {
-    execSync("claude plugin install snippets-cli@snippets-cli", {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    console.log(status.ok("Plugin installed"));
-  } catch (err) {
-    const msg = err instanceof Error ? (err as { stderr?: string }).stderr || err.message : String(err);
-    if (msg.includes("already")) {
-      console.log(status.ok("Plugin already installed"));
-    } else {
+  // Install or update plugin
+  if (alreadyInstalled) {
+    console.log("Updating plugin...");
+    try {
+      runClaude(`plugin update ${PLUGIN_REF}`);
+      console.log(status.ok("Plugin updated"));
+    } catch (err) {
+      const msg = err instanceof Error ? (err as { stderr?: string }).stderr || err.message : String(err);
+      if (msg.includes("already up to date") || msg.includes("already")) {
+        console.log(status.ok("Plugin already up to date"));
+      } else {
+        console.error(status.warn(`Failed to update plugin: ${msg}`));
+        process.exit(1);
+      }
+    }
+  } else {
+    console.log("Installing plugin...");
+    try {
+      runClaude(`plugin install ${PLUGIN_REF}`);
+      console.log(status.ok("Plugin installed"));
+    } catch (err) {
+      const msg = err instanceof Error ? (err as { stderr?: string }).stderr || err.message : String(err);
       console.error(status.warn(`Failed to install plugin: ${msg}`));
       process.exit(1);
     }
   }
 
-  console.log(fmt.bold("\nDone!"));
-  console.log("Restart Claude Code to activate the plugin.\n");
+  console.log(fmt.bold(`\n${alreadyInstalled ? "Updated" : "Done"}!`));
+  console.log("Restart Claude Code to activate changes.\n");
   console.log("Features:");
   console.log(status.info("Skills: auto-invoked for snippet management conversations"));
   console.log(status.info("Commands: /snippets-cli:add, /snippets-cli:find, /snippets-cli:show"));
