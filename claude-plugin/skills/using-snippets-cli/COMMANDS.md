@@ -177,6 +177,23 @@ Options:
 - `--tag` - Filter by tag
 - `-o`, `--output` - Output file path
 
+## LLM Enrichment
+
+### enrich
+Re-run LLM enrichment on existing snippets to fill missing metadata.
+```bash
+snip enrich my-snippet          # Enrich a single snippet
+snip enrich --all               # Enrich all snippets with missing metadata
+snip enrich --all --force       # Regenerate all metadata
+snip enrich --all --type prompt # Enrich only prompts
+snip enrich --all --dry-run     # Preview without writing
+```
+Options:
+- `--all` - Enrich all snippets
+- `--force` - Overwrite existing metadata fields
+- `--type` - Filter by snippet type (with `--all`)
+- `--dry-run` - Show what would be updated without writing
+
 ## Configuration
 
 ### config
@@ -194,6 +211,18 @@ Add a custom snippet type.
 ```bash
 snip config:types:add checklist
 ```
+
+### config:llm
+View and manage LLM provider configuration (BYOL: Bring Your Own LLM).
+```bash
+snip config:llm                           # Show LLM config
+snip config:llm:provider gemini           # Set primary provider
+snip config:llm:provider auto             # Auto-detect best available
+snip config:llm:fallback ollama           # Set fallback provider
+snip config:llm:key gemini YOUR_KEY       # Set API key
+snip config:llm:model ollama llama3.2     # Set model
+```
+Providers: `ollama`, `gemini`, `claude`, `openai`, `auto`
 
 ## Integrations
 
