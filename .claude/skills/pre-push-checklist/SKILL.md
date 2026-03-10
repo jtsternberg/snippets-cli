@@ -98,3 +98,25 @@ Present the checklist as a markdown table:
 ```
 
 Only flag items that are affected by the current diff. Skip categories where nothing changed.
+
+## Tracking Findings with Beads
+
+After presenting the checklist, use beads to track any items that need work:
+
+1. **Check for existing tasks** — Run `bd list --status=open` and `bd search <keyword>` to see if tasks already cover the finding. If so, augment the existing task's description with any new details (`bd update <id> --description="..."`).
+
+2. **Create an epic** if multiple findings exist — Group related checklist items under a single epic so they can be worked as a batch:
+   ```bash
+   bd create --title="Pre-push checklist fixes for <branch>" --type=task --priority=2
+   ```
+
+3. **Create individual tasks** for each finding that needs work, with the epic as parent:
+   ```bash
+   bd create --title="Update README for <specific gap>" --type=task --priority=2 --parent=<epic-id>
+   ```
+
+4. **Link discovered-from** — If the checklist was triggered by a specific feature task or issue, link each new finding back to it using the `discovered-from` dependency type:
+   ```bash
+   bd dep add <new-task-id> <triggering-issue-id> --type=discovered-from
+   ```
+   This records that the gap was discovered while working on the triggering issue.
