@@ -1,0 +1,15 @@
+{
+  "name": "snippets-cli",
+  "description": "Marketplace for snippets-cli Claude Code plugin",
+  "owner": {
+    "name": "Justin Sternberg"
+  },
+  "plugins": [
+    {
+      "name": "snippets-cli",
+      "source": "./claude-plugin",
+      "description": "Code snippet management with semantic search and Obsidian-compatible markdown storage",
+      "version": "0.1.0"
+    }
+  ]
+}
