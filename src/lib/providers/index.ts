@@ -75,17 +75,18 @@ function getProviderChain(): LlmProvider[] {
  * Call an LLM using the configured provider chain.
  * Tries each provider in order until one succeeds.
  */
-export async function callLlm(prompt: string): Promise<string | null> {
+export async function callLlm(prompt: string, label?: string): Promise<string | null> {
   const chain = getProviderChain();
+  const tag = label ? ` [${label}]` : "";
 
   for (const provider of chain) {
     if (await provider.isAvailable()) {
       if (_isDebugMode()) {
-        console.error(`[debug] Using provider: ${provider.name}`);
+        console.error(`[debug]${tag} Using provider: ${provider.name}`);
       }
       const result = await provider.generate(prompt);
       if (_isDebugMode()) {
-        console.error(`[debug] Response (${result?.length ?? 0} chars): ${result ?? "(null)"}`);
+        console.error(`[debug]${tag} Response (${result?.length ?? 0} chars): ${result ?? "(null)"}`);
       }
       if (result) return result;
     }

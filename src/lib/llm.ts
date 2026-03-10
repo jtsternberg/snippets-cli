@@ -134,7 +134,7 @@ Content:
 ---
 ${content.slice(0, 1500)}`;
 
-  const result = await callLlm(prompt);
+  const result = await callLlm(prompt, "enrich");
   if (!result) return {};
 
   // Extract JSON from response (handle markdown fences, extra text)
@@ -169,7 +169,39 @@ ${content.slice(0, 1500)}`;
     if (aliases.length > 0) updates.aliases = aliases;
   }
 
+  // Fact-check: verify language detection with a focused follow-up prompt.
+  // Small models can misclassify, so give them a second look.
+  if (updates.language) {
+    const verified = await verifyLanguage(content, updates.language);
+    if (verified && verified !== updates.language) {
+      updates.language = verified;
+    }
+  }
+
   return updates;
+}
+
+/**
+ * Quick follow-up to verify the detected language is correct.
+ * Gives the model a chance to reconsider with a focused question.
+ */
+async function verifyLanguage(content: string, detectedLang: string): Promise<string | null> {
+  const prompt = `A language detector classified the following content as "${detectedLang}".
+
+Look at the content carefully. Is "${detectedLang}" the correct language? Consider whether it might actually be a different programming language, a shell script, a config format, or even a natural language prompt/instruction meant for an LLM.
+
+Respond with ONLY the correct language name in lowercase (e.g., "bash", "python", "yaml", "prompt"). If "${detectedLang}" is correct, respond with "${detectedLang}".
+
+Content:
+---
+${content.slice(0, 1000)}`;
+
+  const result = await callLlm(prompt, "verify-language");
+  if (!result) return null;
+
+  const cleaned = result.toLowerCase().trim().replace(/[^a-z+#]/g, "");
+  if (VALID_LANGUAGES.includes(cleaned)) return cleaned;
+  return detectedLang;
 }
 
 function parseJsonResponse(text: string): Record<string, unknown> | null {
