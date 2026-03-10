@@ -1144,7 +1144,7 @@ function installClaudeCode(): void {
     console.error();
     console.error("Or install the plugin manually inside Claude Code:");
     console.error("  /plugin marketplace add jtsternberg/snippets-cli");
-    console.error("  /plugin install snippets-cli@jtsternberg/snippets-cli");
+    console.error("  /plugin install snippets-cli@snippets-cli");
     process.exit(1);
   }
 
@@ -1171,7 +1171,7 @@ function installClaudeCode(): void {
   // Install plugin
   console.log("Installing plugin...");
   try {
-    execSync("claude plugin install snippets-cli@jtsternberg/snippets-cli", {
+    execSync("claude plugin install snippets-cli@snippets-cli", {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
     });
