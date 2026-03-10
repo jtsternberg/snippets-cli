@@ -4,7 +4,7 @@ import { EXIT_CODES, type Snippet } from "../types/index.js";
 import { readFileSync, writeFileSync, mkdtempSync, unlinkSync, rmdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { writeSnippetFile } from "../lib/frontmatter.js";
-import { requireGh } from "../lib/gist.js";
+import { requireGh, gistFilename } from "../lib/gist.js";
 import { tmpdir } from "node:os";
 import { resolve as resolvePath } from "node:path";
 
@@ -103,20 +103,6 @@ function resolveSnippetsToExport(
 
 // --- Gist export ---
 
-const LANG_TO_EXT: Record<string, string> = {
-  javascript: ".js", typescript: ".ts", python: ".py", ruby: ".rb",
-  bash: ".sh", zsh: ".sh", fish: ".fish", go: ".go", rust: ".rs",
-  java: ".java", kotlin: ".kt", swift: ".swift", c: ".c", cpp: ".cpp",
-  csharp: ".cs", php: ".php", perl: ".pl", lua: ".lua", r: ".r",
-  sql: ".sql", html: ".html", css: ".css", scss: ".scss", json: ".json",
-  yaml: ".yaml", toml: ".toml", xml: ".xml", markdown: ".md", prompt: ".md",
-};
-
-function gistFilename(snippet: Snippet): string {
-  const ext = LANG_TO_EXT[snippet.frontmatter.language] || ".md";
-  return `${snippet.slug}${ext}`;
-}
-
 function gistContent(snippet: Snippet): string {
   // Extract code from fenced blocks
   const blocks: string[] = [];
@@ -178,7 +164,7 @@ async function exportToGist(
       writeSnippetFile(s.filePath, {
         ...s.frontmatter,
         gist_id: gistId,
-        gist_updated: new Date().toISOString(),
+        gist_updated: new Date().toISOString().slice(0, 10),
       }, s.content);
       console.log(`Saved gist_id to ${s.slug}`);
     }
@@ -200,7 +186,7 @@ function updateGist(snippet: Snippet): void {
     });
     writeSnippetFile(snippet.filePath, {
       ...snippet.frontmatter,
-      gist_updated: new Date().toISOString(),
+      gist_updated: new Date().toISOString().slice(0, 10),
     }, snippet.content);
     console.log(`Updated gist: https://gist.github.com/${gistId}`);
   } finally {

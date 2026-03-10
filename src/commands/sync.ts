@@ -1,36 +1,12 @@
 import { Command } from "commander";
 import { getAllSnippets } from "../lib/resolve.js";
 import { EXIT_CODES, type Snippet } from "../types/index.js";
-import { writeSnippetFile } from "../lib/frontmatter.js";
-import { requireGh, fetchGist } from "../lib/gist.js";
+import { writeSnippetFile, extractCopyContent } from "../lib/frontmatter.js";
+import { requireGh, fetchGist, gistFilename } from "../lib/gist.js";
 import { execFileSync } from "node:child_process";
 import { writeFileSync, mkdtempSync, unlinkSync, rmdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve as resolvePath } from "node:path";
-
-const LANG_TO_EXT: Record<string, string> = {
-  javascript: ".js", typescript: ".ts", python: ".py", ruby: ".rb",
-  bash: ".sh", zsh: ".sh", fish: ".fish", go: ".go", rust: ".rs",
-  java: ".java", kotlin: ".kt", swift: ".swift", c: ".c", cpp: ".cpp",
-  csharp: ".cs", php: ".php", perl: ".pl", lua: ".lua", r: ".r",
-  sql: ".sql", html: ".html", css: ".css", scss: ".scss", json: ".json",
-  yaml: ".yaml", toml: ".toml", xml: ".xml", markdown: ".md", prompt: ".md",
-};
-
-function gistFilename(snippet: Snippet): string {
-  const ext = LANG_TO_EXT[snippet.frontmatter.language] || ".md";
-  return `${snippet.slug}${ext}`;
-}
-
-function extractCode(snippet: Snippet): string {
-  const blocks: string[] = [];
-  const regex = /```\w*\n([\s\S]*?)```/g;
-  let match;
-  while ((match = regex.exec(snippet.content)) !== null) {
-    blocks.push(match[1].trimEnd());
-  }
-  return blocks.length > 0 ? blocks.join("\n\n") : snippet.body;
-}
 
 type SyncAction = "push" | "pull" | "conflict" | "up-to-date";
 
@@ -49,8 +25,9 @@ function detectAction(snippet: Snippet, gistUpdatedAt: string): SyncAction {
     return "push";
   }
 
+  // Normalize all dates to YYYY-MM-DD for comparison (modified is already YYYY-MM-DD)
   const localDate = new Date(localModified);
-  const gistDate = new Date(gistUpdatedAt);
+  const gistDate = new Date(gistUpdatedAt.slice(0, 10));
   const syncDate = new Date(lastSync);
 
   const localChanged = localDate > syncDate;
@@ -68,13 +45,13 @@ function pushToGist(snippet: Snippet): void {
   const tmpPath = resolvePath(tmpDir, gistFilename(snippet));
 
   try {
-    writeFileSync(tmpPath, extractCode(snippet), "utf-8");
+    writeFileSync(tmpPath, extractCopyContent(snippet), "utf-8");
     execFileSync("gh", ["gist", "edit", gistId, "--add", tmpPath], {
       stdio: "pipe",
     });
     writeSnippetFile(snippet.filePath, {
       ...snippet.frontmatter,
-      gist_updated: new Date().toISOString(),
+      gist_updated: new Date().toISOString().slice(0, 10),
     }, snippet.content);
   } finally {
     try { unlinkSync(tmpPath); } catch {}
@@ -90,7 +67,7 @@ function pullFromGist(snippet: Snippet, gistContent: string): void {
 
   writeSnippetFile(snippet.filePath, {
     ...snippet.frontmatter,
-    gist_updated: new Date().toISOString(),
+    gist_updated: new Date().toISOString().slice(0, 10),
   }, fencedContent);
 }
 
@@ -122,13 +99,7 @@ export const syncCommand = new Command("sync")
 
       try {
         const gist = fetchGist(gistId);
-        // Get updated_at from gh gist view
-        const meta = JSON.parse(
-          execFileSync("gh", [
-            "gist", "view", gistId, "--json", "updatedAt",
-          ], { encoding: "utf-8", stdio: "pipe" }).trim(),
-        );
-        gistUpdatedAt = meta.updatedAt;
+        gistUpdatedAt = gist.updatedAt;
 
         // Find the matching file in the gist
         const expectedFilename = gistFilename(snippet);

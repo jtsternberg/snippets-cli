@@ -287,6 +287,10 @@ async function importFromGist(opts: {
 
   const gistId = parseGistId(opts.fromGist);
   const gist = fetchGist(gistId);
+  // Use the gist's last-updated date as the sync baseline
+  const gistUpdated = gist.updatedAt
+    ? gist.updatedAt.slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
 
   if (gist.files.length === 0) {
     console.error("Gist has no files.");
@@ -320,6 +324,7 @@ async function importFromGist(opts: {
         ...parsed.frontmatter,
         type,
         gist_id: gistId,
+        gist_updated: gistUpdated,
         source: `https://gist.github.com/${gistId}`,
       });
       fm.tags = [...new Set([...fm.tags, ...tags])];
@@ -336,6 +341,7 @@ async function importFromGist(opts: {
         tags,
         type,
         gist_id: gistId,
+        gist_updated: gistUpdated,
         source: `https://gist.github.com/${gistId}`,
       });
 
