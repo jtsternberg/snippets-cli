@@ -18,15 +18,20 @@ CLI snippet manager with semantic search, Obsidian-compatible markdown storage, 
 ## Installation
 
 ```bash
+npm install -g @jtsternberg/snip
+```
+
+Requires **Node.js 22+**.
+
+### From source
+
+```bash
 git clone https://github.com/jtsternberg/snippets-cli.git
 cd snippets-cli
 npm install
 npm run build
 npm link
 ```
-
-Requires **Node.js 22+**.
-
 ## Quick Start
 
 ```bash
@@ -196,7 +201,6 @@ Or point to your existing copy of the snippets-cli repository:
 - **Agent**: Snippet specialist for complex multi-step workflows
 
 See [claude-plugin/.claude-plugin/README.md](claude-plugin/.claude-plugin/README.md) for full documentation.
-
 ## Development
 
 ```bash

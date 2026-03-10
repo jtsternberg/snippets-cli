@@ -1,5 +1,5 @@
 {
-  "name": "snippets-cli",
+  "name": "@jtsternberg/snip",
   "version": "0.1.0",
   "description": "CLI snippet manager with semantic search and Obsidian-compatible markdown storage",
   "type": "module",
@@ -19,9 +19,27 @@
     "cli",
     "markdown",
     "obsidian",
-    "semantic-search"
+    "semantic-search",
+    "code-snippets",
+    "snippet-manager",
+    "qmd",
+    "ollama",
+    "alfred"
   ],
+  "author": "Justin Sternberg",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jtsternberg/snippets-cli.git"
+  },
+  "homepage": "https://github.com/jtsternberg/snippets-cli#readme",
+  "bugs": {
+    "url": "https://github.com/jtsternberg/snippets-cli/issues"
+  },
+  "files": [
+    "dist",
+    "assets"
+  ],
   "engines": {
     "node": ">=22"
   },
