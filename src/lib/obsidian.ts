@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve, basename, join } from "node:path";
 
@@ -36,7 +36,11 @@ export function isObsidianRunning(): boolean {
 }
 
 export function openVault(vaultPath: string): void {
-  execSync(`obsidian open ${vaultPath}`);
+  const child = spawn("obsidian", ["open", vaultPath], {
+    detached: true,
+    stdio: "ignore",
+  });
+  child.unref();
 }
 
 export function getBacklinks(filePath: string, libraryPath: string): string[] {
