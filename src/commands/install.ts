@@ -947,8 +947,7 @@ export async function installShellCompletions(program: Command, shell?: string):
   const targetShell = shell || detectShell();
 
   if (!["bash", "zsh", "fish"].includes(targetShell)) {
-    console.error(`Unsupported shell: ${targetShell}. Supported: bash, zsh, fish`);
-    return;
+    throw new Error(`Unsupported shell: ${targetShell}. Supported: bash, zsh, fish`);
   }
 
   const commands = introspectProgram(program);
@@ -993,13 +992,12 @@ export function createInstallCommand(program: Command): Command {
     .action(async (integration: string, shell?: string) => {
       switch (integration) {
         case "completions": {
-          if (shell && !["bash", "zsh", "fish"].includes(shell)) {
-            console.error(
-              `Unsupported shell: ${shell}. Supported: bash, zsh, fish`,
-            );
+          try {
+            await installShellCompletions(program, shell);
+          } catch (err) {
+            console.error(err instanceof Error ? err.message : String(err));
             process.exit(1);
           }
-          await installShellCompletions(program, shell);
           break;
         }
 

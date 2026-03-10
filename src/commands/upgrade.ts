@@ -5,7 +5,7 @@ import { resolve, dirname } from "node:path";
 import { promisify } from "node:util";
 import { confirm } from "@inquirer/prompts";
 import { updateAndEmbed, isQmdInstalled } from "../lib/qmd.js";
-import { loadConfig, getDefaultConfig } from "../lib/config.js";
+import { getDefaultConfig, getConfigPath, configExists } from "../lib/config.js";
 import { runDoctorCheck } from "./doctor.js";
 import { installShellCompletions } from "./install.js";
 
@@ -83,10 +83,34 @@ export function createUpgradeCommand(program: Command): Command {
 
       // 2. Update
       console.log("\nUpdating snip CLI...");
+      let updateSucceeded = true;
       try {
         if (repoPath) {
           console.log(`  Git install detected at ${repoPath}`);
-          await runWithOutput("git", ["pull"], repoPath);
+
+          // Check for dirty working tree before pulling
+          try {
+            const { stdout: statusOut } = await execFileAsync(
+              "git", ["status", "--porcelain"], { cwd: repoPath },
+            );
+            if (statusOut.trim()) {
+              console.warn("  !!  Working tree has uncommitted changes — skipping git pull to avoid conflicts.");
+            } else {
+              // Warn if not on main/master, but still pull
+              const { stdout: branchOut } = await execFileAsync(
+                "git", ["rev-parse", "--abbrev-ref", "HEAD"], { cwd: repoPath },
+              );
+              const branch = branchOut.trim();
+              if (branch !== "main" && branch !== "master") {
+                console.warn(`  !!  Not on main/master (on '${branch}') — pulling ${branch}.`);
+              }
+              await runWithOutput("git", ["pull"], repoPath);
+            }
+          } catch {
+            // If git status/branch check fails, skip the pull
+            console.warn("  !!  Could not determine git status — skipping git pull.");
+          }
+
           await runWithOutput("npm", ["install"], repoPath);
           await runWithOutput("npm", ["run", "build"], repoPath);
           console.log("  Build complete.");
@@ -95,12 +119,13 @@ export function createUpgradeCommand(program: Command): Command {
           await runWithOutput("npm", ["update", "-g", "snippets-cli"], process.cwd());
         }
       } catch (err) {
-        console.error(`Update failed: ${err instanceof Error ? err.message : String(err)}`);
-        process.exit(1);
+        console.error(`\nUpdate failed: ${err instanceof Error ? err.message : String(err)}`);
+        console.error("Continuing with remaining upgrade steps...");
+        updateSucceeded = false;
       }
 
       // Show version after upgrade
-      if (repoPath) {
+      if (repoPath && updateSucceeded) {
         const versionAfter = readPackageVersion(repoPath);
         if (versionBefore !== "unknown" && versionAfter !== "unknown") {
           if (versionBefore === versionAfter) {
@@ -154,14 +179,22 @@ export function createUpgradeCommand(program: Command): Command {
         console.log("  qmd not installed, skipping.");
       }
 
-      // 6. Config migration — log any new top-level keys added since last save.
-      // Deep-merge in loadConfig() already applies nested defaults automatically;
-      // this just surfaces what's new to the user.
-      const defaults = getDefaultConfig();
-      const config = loadConfig();
-      const newKeys = Object.keys(defaults).filter((k) => !(k in config));
-      if (newKeys.length > 0) {
-        console.log(`\nNew config keys (auto-applied from defaults): ${newKeys.join(", ")}`);
+      // 6. Config migration — compare raw saved config keys against getDefaultConfig() keys.
+      // loadConfig() deep-merges defaults automatically, so we read the raw saved file to
+      // find keys that exist in defaults but are absent from the user's saved config.
+      if (configExists()) {
+        try {
+          const raw = JSON.parse(
+            readFileSync(getConfigPath(), "utf-8"),
+          ) as Record<string, unknown>;
+          const defaults = getDefaultConfig();
+          const newKeys = Object.keys(defaults).filter((k) => !(k in raw));
+          if (newKeys.length > 0) {
+            console.log(`\nNew config keys (auto-applied from defaults): ${newKeys.join(", ")}`);
+          }
+        } catch {
+          // ignore parse errors
+        }
       }
 
       // 7. Health check
