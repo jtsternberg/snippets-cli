@@ -37,6 +37,7 @@ print("hello")
     expect(item.mods.alt.arg).toBe("/lib/snippets/test-snippet.md");
     expect(item.mods.ctrl.arg).toBe("/lib/snippets/test-snippet.md");
     expect(item.text.copy).toBe('print("hello")');
+    expect(item.icon).toEqual({ type: "filetype", path: ".py" });
     expect(item.variables.snippet_slug).toBe("test-snippet");
     expect(item.variables.snippet_type).toBe("snippet");
   });
@@ -57,6 +58,33 @@ Some content`,
 
     const result = formatAlfredResults([snippet]);
     expect(result.items[0].title).toBe("my-slug");
+  });
+
+  it("uses fileicon fallback when language has no known extension", () => {
+    const snippet = makeSnippet(
+      `---
+type: snippet
+language: cobol
+---
+IDENTIFICATION DIVISION.`,
+      "/lib/snippets/old.md",
+    );
+
+    const result = formatAlfredResults([snippet]);
+    expect(result.items[0].icon).toEqual({ type: "fileicon", path: "/lib/snippets/old.md" });
+  });
+
+  it("uses fileicon fallback when no language is set", () => {
+    const snippet = makeSnippet(
+      `---
+type: snippet
+---
+plain text`,
+      "/lib/snippets/notes.md",
+    );
+
+    const result = formatAlfredResults([snippet]);
+    expect(result.items[0].icon).toEqual({ type: "fileicon", path: "/lib/snippets/notes.md" });
   });
 });
 

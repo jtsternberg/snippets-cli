@@ -415,21 +415,32 @@ function findExistingWorkflow(workflowsDir: string): string | null {
   return null;
 }
 
-function generateInfoPlist(snipBin: string, maxResults: number): string {
-  const searchScript = [
+export function generateInfoPlist(snipBin: string, maxResults: number): string {
+  // Shared preamble for all Alfred scripts:
+  // - Ensures common binary locations are on PATH
+  // - Sets SNIP_BIN to the detected path at install time unless the user has
+  //   already set it in Alfred's Workflow Environment Variables (Preferences →
+  //   Workflows → [workflow] → Configure Workflow → Environment Variables).
+  // Using ${VAR:=default} via the : builtin safely handles paths with spaces.
+  const preamble = [
     `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"`,
-    `${snipBin} search "{query}" --json -n ${maxResults}`,
+    `: "\${SNIP_BIN:=${snipBin}}"`,
+  ].join("\n");
+
+  const searchScript = [
+    preamble,
+    `"$SNIP_BIN" search "{query}" --json -n ${maxResults}`,
   ].join("\n");
   const captureScript = [
-    `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"`,
+    preamble,
     `echo -n "$1" | pbcopy`,
-    `output=$(${snipBin} add --from-clipboard 2>&1)`,
+    `output=$("$SNIP_BIN" add --from-clipboard 2>&1)`,
     `filepath=$(echo "$output" | grep "^Created:" | sed 's/Created: //')`,
     `echo -n "$filepath"`,
   ].join("\n");
   const keywordCaptureScript = [
-    `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"`,
-    `output=$(${snipBin} add --from-clipboard 2>&1)`,
+    preamble,
+    `output=$("$SNIP_BIN" add --from-clipboard 2>&1)`,
     `filepath=$(echo "$output" | grep "^Created:" | sed 's/Created: //')`,
     `echo -n "$filepath"`,
   ].join("\n");
@@ -941,6 +952,8 @@ function installAlfredWorkflow(): void {
   console.log("  Space        Quick Look preview");
   console.log();
   console.log("Tip: Set max results with: snip config set alfred.maxResults 30");
+  console.log("Tip: Override snip binary with SNIP_BIN in Alfred's Workflow Environment Variables");
+  console.log("       (Alfred Preferences → Workflows → Snip Search → Configure Workflow → Environment Variables)");
 }
 
 export async function installShellCompletions(program: Command, shell?: string): Promise<void> {

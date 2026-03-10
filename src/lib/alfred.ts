@@ -7,7 +7,7 @@ interface AlfredItem {
   subtitle: string;
   arg: string;
   autocomplete: string;
-  icon?: { path: string };
+  icon?: { type?: string; path: string };
   mods: {
     cmd: { subtitle: string; arg: string };
     alt: { subtitle: string; arg: string };
@@ -20,6 +20,46 @@ interface AlfredItem {
 
 interface AlfredOutput {
   items: AlfredItem[];
+}
+
+// Maps snippet language names to file extensions so Alfred can show the
+// system's icon for that language (e.g. Python's .py icon, JS's .js icon).
+const LANGUAGE_EXTENSIONS: Record<string, string> = {
+  bash: ".sh",
+  c: ".c",
+  "c#": ".cs",
+  "c++": ".cpp",
+  cpp: ".cpp",
+  csharp: ".cs",
+  css: ".css",
+  fish: ".fish",
+  go: ".go",
+  html: ".html",
+  java: ".java",
+  javascript: ".js",
+  json: ".json",
+  kotlin: ".kt",
+  markdown: ".md",
+  php: ".php",
+  python: ".py",
+  ruby: ".rb",
+  rust: ".rs",
+  shell: ".sh",
+  sql: ".sql",
+  swift: ".swift",
+  toml: ".toml",
+  typescript: ".ts",
+  yaml: ".yaml",
+  yml: ".yaml",
+  zsh: ".zsh",
+};
+
+function languageIcon(language: string | undefined, filePath: string): { type?: string; path: string } {
+  const ext = language ? LANGUAGE_EXTENSIONS[language.toLowerCase()] : undefined;
+  if (ext) {
+    return { type: "filetype", path: ext };
+  }
+  return { type: "fileicon", path: filePath };
 }
 
 export function formatAlfredResults(snippets: Snippet[]): AlfredOutput {
@@ -39,6 +79,7 @@ export function formatAlfredResults(snippets: Snippet[]): AlfredOutput {
         subtitle,
         arg: codeContent,
         autocomplete: s.frontmatter.title || s.slug,
+        icon: languageIcon(s.frontmatter.language, s.filePath),
         mods: {
           cmd: { subtitle: "Copy to clipboard", arg: codeContent },
           alt: { subtitle: "Open in editor", arg: s.filePath },
