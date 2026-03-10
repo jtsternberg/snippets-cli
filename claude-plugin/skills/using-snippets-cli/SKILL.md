@@ -12,6 +12,7 @@ The `snip` CLI manages a local library of code snippets, prompt templates, and r
 - `snip` CLI installed and on PATH (`npm i -g snippets-cli` or clone + `npm link`)
 - A snippet library initialized (`snip init`)
 - Optional: `qmd` for semantic search (`snip doctor` to verify)
+- Optional: `gh` CLI for GitHub Gist sync (`gh auth login` to authenticate)
 - Optional: An LLM provider for enrichment — Ollama (default), Gemini, Claude, or OpenAI (`snip config:llm`)
 
 ## Quick Reference
@@ -45,6 +46,14 @@ snip link my-snippet --auto                    # Auto-link related snippets
 ```bash
 snip run my-template --var name=Widget         # Fill template variables
 snip run my-template --var name=Widget --no-copy  # Print without copying
+```
+
+### GitHub Gist Sync
+```bash
+snip export my-snippet --to-gist               # Publish as secret gist
+snip import --from-gist <gist-url-or-id>       # Import from gist
+snip sync                                      # Sync all gist-linked snippets
+snip sync --dry-run                            # Preview sync actions
 ```
 
 ## JSON Output

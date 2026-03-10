@@ -18,8 +18,9 @@ CLI for your **snippet and prompt library**: code snippets, LLM prompts, and reu
 - 💬 **Prompt templates** — first-class `prompts/` type and `{{var}}` syntax; `snip run` fills variables
 - ⌘ **Alfred workflow** integration for macOS
 - ⚡ **Shell completions** for bash, zsh, and fish
-- 📥 **Import** from files, globs, or URLs
-- 📤 **Export** to JSON or Markdown
+- 📥 **Import** from files, globs, URLs, or GitHub Gists
+- 📤 **Export** to JSON, Markdown, or GitHub Gists
+- 🔄 **Gist sync** — bidirectional sync between local snippets and GitHub Gists
 
 ## Installation
 
@@ -69,9 +70,10 @@ snip show my-snippet               # Display in terminal
 | `snip run <name>` | Fill template variables and copy result (`--var key=value`) |
 | `snip exec <name>` | Execute a snippet as a script (`--shell`, `--dry-run`) |
 | `snip link <name>` | Create symlink to snippet |
-| `snip import <sources...>` | Import from files, globs, or URLs (`--no-enrich`, `--provider`) |
-| `snip export [name]` | Export to JSON or Markdown (`--format`, `--output`, `--to-gist`) |
+| `snip import [sources...]` | Import from files, globs, URLs, or gists (`--from-gist`, `--provider`) |
+| `snip export [name]` | Export to JSON, Markdown, or GitHub Gist (`--to-gist`, `--public`) |
 | `snip enrich [name]` | Re-run LLM enrichment (`--all`, `--force`, `--dry-run`, `--provider`) |
+| `snip sync` | Sync gist-linked snippets (`--push`, `--pull`, `--dry-run`) |
 | `snip config` | View or set configuration |
 | `snip config:types:add <name>` | Add a snippet type |
 | `snip config:llm` | View LLM provider configuration |
@@ -179,6 +181,23 @@ snip install obsidian
 ```
 
 Opens your snippet library as an Obsidian vault. Snippets use wikilinks in `related` fields for cross-referencing.
+
+### GitHub Gist Sync
+
+Export snippets as GitHub Gists and keep them in sync. Requires the [GitHub CLI](https://cli.github.com) (`gh`).
+
+```bash
+snip export my-snippet --to-gist          # Create a secret gist
+snip export my-snippet --to-gist --public # Create a public gist
+snip export my-snippet --to-gist          # Re-run to update existing gist
+snip import --from-gist <gist-url-or-id>  # Import all files from a gist
+snip sync                                 # Sync all gist-linked snippets
+snip sync --dry-run                       # Preview what would sync
+snip sync --push                          # Force push local changes
+snip sync --pull                          # Force pull gist changes
+```
+
+Gist-linked snippets track their `gist_id` and `gist_updated` timestamp in frontmatter for automatic sync detection.
 
 ### Semantic Search (qmd)
 
