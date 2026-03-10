@@ -92,17 +92,19 @@ Config file: `~/.config/snip/config.json`
 | `types` | Snippet type directories | `["snippets", "prompts"]` |
 | `defaultType` | Default type for new snippets | — |
 | `editor` | Editor for `snip edit` (falls back to `$EDITOR`) | — |
-| `llm.provider` | LLM provider (`ollama`, `gemini`, `claude`, `openai`, `auto`) | `"ollama"` |
+| `llm.provider` | LLM provider (`ollama`, `gemini`, `gemini-cli`, `claude`, `claude-cli`, `openai`, `openai-cli`, `auto`) | `"ollama"` |
 | `llm.fallbackProvider` | Fallback provider (same options, or `null`) | `null` |
 | `llm.ollamaModel` | Ollama model | `"qwen2.5-coder:7b"` |
 | `llm.ollamaHost` | Ollama API host | `"http://localhost:11434"` |
 | `llm.geminiApiKey` | Gemini API key (or use `GEMINI_API_KEY` env var) | `null` |
-| `llm.geminiModel` | Gemini model | `"gemini-2.5-flash"` |
+| `llm.geminiModel` | Gemini API model | `"gemini-2.5-flash"` |
+| `llm.geminiCliModel` | Gemini CLI model (when using `gemini-cli`) | `"gemini-2.5-flash"` |
 | `llm.anthropicApiKey` | Anthropic API key (or use `ANTHROPIC_API_KEY` env var) | `null` |
 | `llm.anthropicModel` | Claude API model | `"claude-3-5-haiku-latest"` |
-| `llm.claudeCliModel` | Claude CLI model (when using `claude` CLI) | `"claude-3-5-haiku-latest"` |
+| `llm.claudeCliModel` | Claude CLI model (when using `claude` CLI) | `"haiku"` |
 | `llm.openaiApiKey` | OpenAI API key (or use `OPENAI_API_KEY` env var) | `null` |
-| `llm.openaiModel` | OpenAI model | `"gpt-4o-mini"` |
+| `llm.openaiModel` | OpenAI API model | `"gpt-4o-mini"` |
+| `llm.codexCliModel` | OpenAI CLI model (when using `openai-cli`) | `"o4-mini"` |
 | `qmd.collectionName` | qmd collection name | — |
 | `alfred.maxResults` | Max Alfred results | — |
 
@@ -217,7 +219,7 @@ snip config:llm:key openai YOUR_API_KEY
 # or: export OPENAI_API_KEY=YOUR_API_KEY
 ```
 
-**Auto mode** — tries providers in order (Gemini, Ollama, Claude, OpenAI) until one succeeds:
+**Auto mode** — tries CLI tools first (gemini-cli, claude-cli, openai-cli), then Ollama, then cloud APIs (Gemini, Claude, OpenAI) until one succeeds:
 ```bash
 snip config:llm:provider auto
 ```
