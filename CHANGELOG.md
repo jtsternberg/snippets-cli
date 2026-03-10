@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-03-10
+
 ### Added
 
+- `snip exec` command to execute snippets as scripts with auto-detected interpreter
 - Claude Code plugin with skills, slash commands, and snippet-specialist agent
 - `snip install claude-code` to install/update the Claude Code plugin from the CLI
 - Plugin marketplace manifest (`.claude-plugin/marketplace.json`)
+
+### Fixed
+
+- Clean exit on Ctrl+C during interactive prompts (no more stack trace)
 
 ## [0.1.0] - 2026-03-10
 
