@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFileSync } from "node:fs";
-import { execSync, spawn } from "node:child_process";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { loadConfig, getLibraryPath } from "../lib/config.js";
 import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../lib/obsidian.js";
@@ -1027,11 +1027,7 @@ function installObsidian(): void {
   if (vaultName) {
     console.log(status.ok(`Registered as "${vaultName}"`));
     console.log(`      Opening vault...`);
-    const child = spawn("open", ["-a", "Obsidian", libraryPath], {
-      detached: true,
-      stdio: "ignore",
-    });
-    child.unref();
+    execSync(`open -a Obsidian "${libraryPath}"`);
   } else {
     console.log(status.warn("Snippet library is not registered as a vault"));
     console.log(`      Open Obsidian → Open another vault → Open folder as vault`);
