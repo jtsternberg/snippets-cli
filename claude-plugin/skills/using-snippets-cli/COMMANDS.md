@@ -149,33 +149,53 @@ Options:
 ## Import & Export
 
 ### import
-Import snippets from files or URLs.
+Import snippets from files, URLs, or GitHub Gists.
 ```bash
 snip import ./my-file.js                          # Import from file
 snip import https://example.com/snippet.py        # Import from URL
 snip import file1.js file2.py                     # Multiple sources
 snip import ./code.ts --type snippet --tags "ts"  # With metadata
 snip import ./notes.md --no-enrich                # Skip LLM enrichment
+snip import --from-gist <gist-url-or-id>          # Import from GitHub Gist
+snip import --from-gist abc123 --no-enrich        # Import gist without enrichment
 ```
 Options:
 - `-t`, `--type` - Snippet type for imported content
 - `--tags` - Comma-separated tags
 - `--no-enrich` - Skip LLM-powered enrichment (title, tags, description)
+- `--from-gist` - Import all files from a GitHub Gist URL or ID
 
 ### export
-Export snippets to JSON or markdown.
+Export snippets to JSON, markdown, or GitHub Gist.
 ```bash
 snip export                              # Export all as JSON
 snip export my-snippet                   # Export single snippet
 snip export --format md                  # Export as markdown
 snip export --type prompt --tag ai       # Filter what to export
 snip export --output ./backup.json       # Write to file
+snip export my-snippet --to-gist         # Publish as secret GitHub Gist
+snip export my-snippet --to-gist --public  # Publish as public gist
 ```
 Options:
 - `-f`, `--format` - Output format: `json` (default) or `md`
 - `-t`, `--type` - Filter by type
 - `--tag` - Filter by tag
 - `-o`, `--output` - Output file path
+- `--to-gist` - Publish snippet(s) as a GitHub Gist
+- `--public` - Create a public gist (default: secret)
+
+### sync
+Sync gist-linked snippets with their GitHub Gists.
+```bash
+snip sync                    # Auto-detect push/pull for each snippet
+snip sync --dry-run          # Preview what would be synced
+snip sync --push             # Force push all local changes to gists
+snip sync --pull             # Force pull all gist changes to local
+```
+Options:
+- `--push` - Force push local changes to gists
+- `--pull` - Force pull gist changes to local
+- `--dry-run` - Show what would be synced without making changes
 
 ## Configuration
 

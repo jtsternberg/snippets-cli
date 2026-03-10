@@ -34,6 +34,9 @@ You are a specialist agent for managing code snippets using the `snip` CLI tool.
 | `snip tags --json` | List all tags as JSON |
 | `snip run <name> --var key=value` | Run prompt template |
 | `snip import <source> --tags "..."` | Import from file/URL |
+| `snip import --from-gist <url-or-id>` | Import from GitHub Gist |
+| `snip export <name> --to-gist` | Publish snippet as GitHub Gist |
+| `snip sync` | Sync gist-linked snippets |
 | `snip link <name> --auto` | Auto-add cross-links |
 | `snip rename <old> <new-title>` | Rename snippet |
 | `snip rm <name> -f` | Delete snippet |
