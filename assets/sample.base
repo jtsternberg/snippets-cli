@@ -1,0 +1,14 @@
+filters:
+  and:
+    - file.folder == "{{TYPE}}"
+    - file.ext != "base"
+views:
+  - type: table
+    name: Table
+    order:
+      - file.name
+      - title
+      - date
+      - modified
+      - language
+      - tags

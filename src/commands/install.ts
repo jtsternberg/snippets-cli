@@ -1019,31 +1019,19 @@ function installObsidian(): void {
   }
 
   // Install .base files for each type directory
+  console.log("Obsidian Base views:");
+  const baseTemplate = readFileSync(resolve(__dirname, "../assets/sample.base"), "utf-8");
   for (const type of config.types) {
     const typeDir = resolve(libraryPath, type);
     if (!existsSync(typeDir)) continue;
     const label = type.charAt(0).toUpperCase() + type.slice(1);
     const basePath = resolve(typeDir, `${label}.base`);
-    if (existsSync(basePath)) continue;
-    const content = [
-      "filters:",
-      "  and:",
-      `    - file.folder == "${type}"`,
-      '    - file.ext != "base"',
-      "views:",
-      "  - type: table",
-      "    name: Table",
-      "    order:",
-      "      - file.name",
-      "      - title",
-      "      - date",
-      "      - modified",
-      "      - language",
-      "      - tags",
-      "",
-    ].join("\n");
-    writeFileSync(basePath, content, "utf-8");
-    console.log(`Created ${basePath}`);
+    if (existsSync(basePath)) {
+      console.log(`  OK  ${label}.base (already exists)`);
+    } else {
+      writeFileSync(basePath, baseTemplate.replace("{{TYPE}}", type), "utf-8");
+      console.log(`  ++  ${label}.base (created)`);
+    }
   }
   console.log();
 
