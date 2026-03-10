@@ -20,6 +20,8 @@ export class ClaudeProvider implements LlmProvider {
 
     const config = loadConfig();
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45_000);
       const resp = await fetch(ANTHROPIC_API_URL, {
         method: "POST",
         headers: {
@@ -27,6 +29,7 @@ export class ClaudeProvider implements LlmProvider {
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
+        signal: controller.signal,
         body: JSON.stringify({
           model: config.llm.anthropicModel,
           max_tokens: 256,
@@ -34,6 +37,7 @@ export class ClaudeProvider implements LlmProvider {
           messages: [{ role: "user", content: prompt }],
         }),
       });
+      clearTimeout(timeout);
 
       if (!resp.ok) return null;
       const data = (await resp.json()) as {

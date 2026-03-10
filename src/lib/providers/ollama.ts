@@ -22,9 +22,12 @@ export class OllamaProvider implements LlmProvider {
   async generate(prompt: string): Promise<string | null> {
     const config = loadConfig();
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45_000);
       const resp = await fetch(`${config.llm.ollamaHost}/api/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           model: config.llm.ollamaModel,
           prompt,
@@ -32,6 +35,7 @@ export class OllamaProvider implements LlmProvider {
           options: { temperature: 0.1 },
         }),
       });
+      clearTimeout(timeout);
 
       if (!resp.ok) return null;
       const data = (await resp.json()) as { response: string };

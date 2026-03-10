@@ -20,17 +20,21 @@ export class GeminiProvider implements LlmProvider {
 
     const config = loadConfig();
     const model = config.llm.geminiModel;
-    const url = `${GEMINI_API_URL}/${model}:generateContent?key=${apiKey}`;
+    const url = `${GEMINI_API_URL}/${model}:generateContent`;
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45_000);
       const resp = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        signal: controller.signal,
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.1 },
         }),
       });
+      clearTimeout(timeout);
 
       if (!resp.ok) return null;
       const data = (await resp.json()) as {

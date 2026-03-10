@@ -1,13 +1,13 @@
 import { Command } from "commander";
-import { renameSync } from "node:fs";
+import { renameSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
 
 import { writeSnippetFile } from "../lib/frontmatter.js";
-import { enrichSnippet, isLlmAvailable, setProviderOverride, setDebugMode } from "../lib/llm.js";
+import { enrichSnippet, isLlmAvailable, setProviderOverride, setDebugMode, isValidProvider } from "../lib/llm.js";
 import { loadConfig, getLibraryPath } from "../lib/config.js";
 import { EXIT_CODES } from "../types/index.js";
-import type { Snippet, SnippetFrontmatter, LlmProviderName } from "../types/index.js";
+import type { Snippet, SnippetFrontmatter } from "../types/index.js";
 import { fmt } from "../lib/format.js";
 import ora from "ora";
 
@@ -30,7 +30,11 @@ export const enrichCommand = new Command("enrich")
   }) => {
     if (opts.debug) setDebugMode(true);
     if (opts.provider) {
-      setProviderOverride(opts.provider as LlmProviderName);
+      if (!isValidProvider(opts.provider)) {
+        console.error(`Invalid provider "${opts.provider}". Use: ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto`);
+        process.exit(EXIT_CODES.CONFIG_ERROR);
+      }
+      setProviderOverride(opts.provider);
     }
     if (!(await isLlmAvailable())) {
       console.error("No LLM provider available. Configure one with `snip config:llm:provider` or start Ollama.");
@@ -168,7 +172,9 @@ async function applyEnrichment(
   ) {
     updatedFm.type = "prompts";
     const libPath = getLibraryPath();
-    const newPath = resolve(libPath, "prompts", `${snippet.slug}.md`);
+    const promptsDir = resolve(libPath, "prompts");
+    mkdirSync(promptsDir, { recursive: true });
+    const newPath = resolve(promptsDir, `${snippet.slug}.md`);
     writeSnippetFile(filePath, updatedFm, content);
     renameSync(filePath, newPath);
     return { updates, movedTo: newPath };

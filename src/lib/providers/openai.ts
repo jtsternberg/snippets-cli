@@ -20,12 +20,15 @@ export class OpenAIProvider implements LlmProvider {
 
     const config = loadConfig();
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45_000);
       const resp = await fetch(OPENAI_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
         },
+        signal: controller.signal,
         body: JSON.stringify({
           model: config.llm.openaiModel,
           temperature: 0.1,
@@ -33,6 +36,7 @@ export class OpenAIProvider implements LlmProvider {
           messages: [{ role: "user", content: prompt }],
         }),
       });
+      clearTimeout(timeout);
 
       if (!resp.ok) return null;
       const data = (await resp.json()) as {

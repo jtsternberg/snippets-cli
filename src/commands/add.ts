@@ -13,8 +13,7 @@ import { EXIT_CODES } from "../types/index.js";
 import { updateAndEmbed } from "../lib/qmd.js";
 import { fmt } from "../lib/format.js";
 import ora from "ora";
-import { enrichSnippet, setProviderOverride, setDebugMode } from "../lib/llm.js";
-import type { LlmProviderName } from "../types/index.js";
+import { enrichSnippet, setProviderOverride, setDebugMode, isValidProvider } from "../lib/llm.js";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { writeFileSync, readFileSync, unlinkSync } from "node:fs";
@@ -32,7 +31,11 @@ export const addCommand = new Command("add")
   .action(async (opts) => {
     if (opts.debug) setDebugMode(true);
     if (opts.provider) {
-      setProviderOverride(opts.provider as LlmProviderName);
+      if (!isValidProvider(opts.provider)) {
+        console.error(`Invalid provider "${opts.provider}". Use: ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto`);
+        process.exit(EXIT_CODES.CONFIG_ERROR);
+      }
+      setProviderOverride(opts.provider);
     }
     const config = loadConfig();
     const libPath = getLibraryPath(config);
@@ -143,8 +146,8 @@ export const addCommand = new Command("add")
     }
 
     // Wrap content in code fence after enrichment so language is available
-    if (!content.includes("```") && language) {
-      content = `\n\`\`\`${language}\n${content}\n\`\`\`\n`;
+    if (!content.includes("```")) {
+      content = `\n\`\`\`${language || ""}\n${content}\n\`\`\`\n`;
     }
 
     // If enrichment detected prompt language, switch type to prompts

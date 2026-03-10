@@ -11,8 +11,8 @@ import {
 import { uniqueSlug } from "../lib/slug.js";
 import { EXIT_CODES } from "../types/index.js";
 import { updateAndEmbed } from "../lib/qmd.js";
-import { enrichSnippet, setProviderOverride, setDebugMode } from "../lib/llm.js";
-import type { LlmProviderName } from "../types/index.js";
+import { enrichSnippet, setProviderOverride, setDebugMode, isValidProvider } from "../lib/llm.js";
+
 
 // Map file extensions to language names
 const EXT_TO_LANG: Record<string, string> = {
@@ -169,7 +169,11 @@ export const importCommand = new Command("import")
   .action(async (sources: string[], opts) => {
     if (opts.debug) setDebugMode(true);
     if (opts.provider) {
-      setProviderOverride(opts.provider as LlmProviderName);
+      if (!isValidProvider(opts.provider)) {
+        console.error(`Invalid provider "${opts.provider}". Use: ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto`);
+        process.exit(EXIT_CODES.CONFIG_ERROR);
+      }
+      setProviderOverride(opts.provider);
     }
     const config = loadConfig();
     const libPath = getLibraryPath(config);

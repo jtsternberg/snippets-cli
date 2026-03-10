@@ -113,3 +113,7 @@ export function getProvider(name: string): LlmProvider | undefined {
 export function getProviderNames(): string[] {
   return Object.keys(providers);
 }
+
+export function isValidProvider(name: string): name is LlmProviderName {
+  return name === "auto" || name in providers;
+}

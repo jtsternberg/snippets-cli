@@ -1,8 +1,8 @@
 import type { SnippetFrontmatter } from "../types/index.js";
-import { callLlm, isLlmAvailable, setProviderOverride, setDebugMode } from "./providers/index.js";
+import { callLlm, isLlmAvailable, setProviderOverride, setDebugMode, isValidProvider } from "./providers/index.js";
 
 // Re-export for backwards compatibility
-export { callLlm, isLlmAvailable, setProviderOverride, setDebugMode };
+export { callLlm, isLlmAvailable, setProviderOverride, setDebugMode, isValidProvider };
 
 /** @deprecated Use isLlmAvailable() instead */
 export async function isOllamaAvailable(): Promise<boolean> {
