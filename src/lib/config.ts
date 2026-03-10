@@ -14,11 +14,16 @@ export function getDefaultConfig(): SnipConfig {
     editor: process.env.EDITOR || "vi",
     llm: {
       provider: "ollama",
+      fallbackProvider: null,
       ollamaModel: "qwen2.5-coder:7b",
       ollamaHost: "http://localhost:11434",
-      fallbackProvider: null,
-      openaiApiKey: null,
+      geminiApiKey: null,
+      geminiModel: "gemini-2.5-flash",
       anthropicApiKey: null,
+      anthropicModel: "claude-3-5-haiku-latest",
+      claudeCliModel: "claude-3-5-haiku-latest",
+      openaiApiKey: null,
+      openaiModel: "gpt-4o-mini",
     },
     qmd: {
       collectionName: "snip",

@@ -20,13 +20,20 @@ export interface Snippet {
   slug: string;
 }
 
+export type LlmProviderName = "ollama" | "gemini" | "claude" | "openai" | "auto";
+
 export interface LlmConfig {
-  provider: string;
+  provider: LlmProviderName;
+  fallbackProvider: LlmProviderName | null;
   ollamaModel: string;
   ollamaHost: string;
-  fallbackProvider: string | null;
-  openaiApiKey: string | null;
+  geminiApiKey: string | null;
+  geminiModel: string;
   anthropicApiKey: string | null;
+  anthropicModel: string;
+  claudeCliModel: string;
+  openaiApiKey: string | null;
+  openaiModel: string;
 }
 
 export interface QmdConfig {

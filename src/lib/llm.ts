@@ -1,59 +1,12 @@
-import { loadConfig } from "./config.js";
 import type { SnippetFrontmatter } from "../types/index.js";
+import { callLlm, isLlmAvailable } from "./providers/index.js";
 
-export interface LlmResponse {
-  text: string;
-}
+// Re-export for backwards compatibility
+export { callLlm, isLlmAvailable };
 
+/** @deprecated Use isLlmAvailable() instead */
 export async function isOllamaAvailable(): Promise<boolean> {
-  const config = loadConfig();
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    const resp = await fetch(`${config.llm.ollamaHost}/api/tags`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    return resp.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function ollamaGenerate(prompt: string, model?: string): Promise<string | null> {
-  const config = loadConfig();
-  const modelName = model || config.llm.ollamaModel;
-
-  try {
-    const resp = await fetch(`${config.llm.ollamaHost}/api/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: modelName,
-        prompt,
-        stream: false,
-        options: { temperature: 0.1 },
-      }),
-    });
-
-    if (!resp.ok) return null;
-    const data = (await resp.json()) as { response: string };
-    return data.response?.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
-async function callLlm(prompt: string): Promise<string | null> {
-  // Try Ollama first
-  if (await isOllamaAvailable()) {
-    const result = await ollamaGenerate(prompt);
-    if (result) return result;
-  }
-
-  // TODO: Add cloud API fallback (OpenAI, Anthropic) when API keys are configured
-
-  return null;
+  return isLlmAvailable();
 }
 
 export async function detectLanguage(code: string): Promise<string | null> {
@@ -171,7 +124,7 @@ export async function enrichSnippet(
   frontmatter: SnippetFrontmatter,
   content: string,
 ): Promise<Partial<SnippetFrontmatter>> {
-  if (!(await isOllamaAvailable())) return {};
+  if (!(await isLlmAvailable())) return {};
 
   const updates: Partial<SnippetFrontmatter> = {};
   const tasks: Promise<void>[] = [];
