@@ -79,7 +79,14 @@ function snipErr(args: string[]): string {
   }
 }
 
+// Check gh availability synchronously at module load so it.skipIf works correctly
 let ghAvailable = false;
+try {
+  execFileSync("gh", ["auth", "status"], { stdio: "pipe" });
+  ghAvailable = true;
+} catch {
+  ghAvailable = false;
+}
 
 beforeAll(() => {
   // Create library dirs and config
@@ -108,18 +115,6 @@ beforeAll(() => {
     "utf-8",
   );
 
-  // Check if gh is available and authenticated in the *test* environment
-  // (macOS keyring is tied to HOME, so overriding HOME breaks gh auth)
-  try {
-    execFileSync("gh", ["auth", "status"], {
-      env: testEnv,
-      stdio: "pipe",
-    });
-    ghAvailable = true;
-  } catch {
-    ghAvailable = false;
-  }
-
   // Create a test snippet
   snip([
     "add",
@@ -140,9 +135,7 @@ describe("snip export --to-gist", () => {
     expect(err).toContain("not found");
   });
 
-  it("creates a gist and saves gist_id to frontmatter", { timeout: 30000 }, () => {
-    if (!ghAvailable) return; // skip if gh not authed
-
+  it.skipIf(!ghAvailable)("creates a gist and saves gist_id to frontmatter", { timeout: 30000 }, () => {
     const output = snip(["export", "gist-test-snippet", "--to-gist"]);
     expect(output).toContain("Created gist:");
     expect(output).toContain("gist.github.com");
@@ -156,9 +149,7 @@ describe("snip export --to-gist", () => {
     expect(content).toContain("gist_id:");
   });
 
-  it("updates existing gist on re-export", { timeout: 30000 }, () => {
-    if (!ghAvailable) return;
-
+  it.skipIf(!ghAvailable)("updates existing gist on re-export", { timeout: 30000 }, () => {
     // gist_id should already be in frontmatter from previous test
     const content = readFileSync(
       resolve(libDir, "snippets", "gist-test-snippet.md"),
@@ -188,9 +179,7 @@ describe("snip sync", () => {
     snip(["rm", "no-gist-snippet", "--force"]);
   });
 
-  it("supports --dry-run flag", { timeout: 30000 }, () => {
-    if (!ghAvailable) return;
-
+  it.skipIf(!ghAvailable)("supports --dry-run flag", { timeout: 30000 }, () => {
     // This test only runs if there are gist-linked snippets
     const output = snip(["sync", "--dry-run"]);
     expect(output).toMatch(/Sync complete:|No snippets linked/);
@@ -203,9 +192,7 @@ describe("snip import --from-gist", () => {
     expect(err).toContain("No sources specified");
   });
 
-  it("imports files from a gist", { timeout: 30000 }, () => {
-    if (!ghAvailable) return;
-
+  it.skipIf(!ghAvailable)("imports files from a gist", { timeout: 30000 }, () => {
     // First export to get a gist URL
     const content = readFileSync(
       resolve(libDir, "snippets", "gist-test-snippet.md"),

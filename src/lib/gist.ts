@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { EXIT_CODES } from "../types/index.js";
+import { EXIT_CODES, type Snippet } from "../types/index.js";
 
 export interface GistFileInfo {
   filename: string;
@@ -11,7 +11,22 @@ export interface GistInfo {
   id: string;
   description: string;
   public: boolean;
+  updatedAt: string;
   files: GistFileInfo[];
+}
+
+export const LANG_TO_EXT: Record<string, string> = {
+  javascript: ".js", typescript: ".ts", python: ".py", ruby: ".rb",
+  bash: ".sh", zsh: ".sh", fish: ".fish", go: ".go", rust: ".rs",
+  java: ".java", kotlin: ".kt", swift: ".swift", c: ".c", cpp: ".cpp",
+  csharp: ".cs", php: ".php", perl: ".pl", lua: ".lua", r: ".r",
+  sql: ".sql", html: ".html", css: ".css", scss: ".scss", json: ".json",
+  yaml: ".yaml", toml: ".toml", xml: ".xml", markdown: ".md", prompt: ".md",
+};
+
+export function gistFilename(snippet: Snippet): string {
+  const ext = LANG_TO_EXT[snippet.frontmatter.language] || ".md";
+  return `${snippet.slug}${ext}`;
 }
 
 export function requireGh(): void {
@@ -42,7 +57,8 @@ export function parseGistId(input: string): string {
   // Bare hex ID
   if (/^[a-f0-9]+$/i.test(input)) return input;
 
-  return input;
+  console.error(`Invalid gist URL or ID: ${input}`);
+  process.exit(EXIT_CODES.EXTERNAL_TOOL_ERROR);
 }
 
 /**
@@ -51,7 +67,7 @@ export function parseGistId(input: string): string {
 export function fetchGist(gistId: string): GistInfo {
   const raw = execFileSync("gh", [
     "gist", "view", gistId, "--json",
-    "id,description,public,files",
+    "id,description,public,updatedAt,files",
   ], { encoding: "utf-8", stdio: "pipe" }).trim();
 
   const data = JSON.parse(raw);
@@ -60,6 +76,7 @@ export function fetchGist(gistId: string): GistInfo {
     id: data.id,
     description: data.description || "",
     public: data.public,
+    updatedAt: data.updatedAt || "",
     files: (data.files as Array<{ filename: string; language: string; content: string }>).map((f) => ({
       filename: f.filename,
       language: (f.language || "").toLowerCase(),
