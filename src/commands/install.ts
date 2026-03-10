@@ -43,7 +43,11 @@ function introspectProgram(program: Command): CommandInfo[] {
 function generateZshCompletions(commands: CommandInfo[]): string {
   const configKeys = getConfigKeys();
   const commandList = commands
-    .map((c) => `    '${c.name}:${c.description.replace(/'/g, "'\\''")}'`)
+    .map((c) => {
+      // Escape colons in command names — zsh _describe uses : as name/description separator
+      const escapedName = c.name.replace(/:/g, "\\:");
+      return `    '${escapedName}:${c.description.replace(/'/g, "'\\''")}' `;
+    })
     .join("\n");
 
   // Skip config and install — they get special handling below
