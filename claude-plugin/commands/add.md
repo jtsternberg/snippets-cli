@@ -23,7 +23,7 @@ All arguments are optional:
 2. If `--content` is specified, run: `snip add --content "<content>"`
    - Add any additional flags provided
 3. If no content source specified, ask the user what they want to save as a snippet
-4. After creation, run `snip list --json | head -1` to confirm the snippet was added
+4. After creation, run `snip list --json` and check the first entry to confirm the snippet was added
 5. Report the snippet name and location
 
 ## Error Handling

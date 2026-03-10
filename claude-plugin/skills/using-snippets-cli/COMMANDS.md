@@ -56,8 +56,8 @@ Options: `-f`, `--force`
 ### show
 Display a snippet's full content.
 ```bash
-snip show my-snippet          # Full markdown with frontmatter
-snip show my-snippet --raw    # Raw file content
+snip show my-snippet          # Syntax-highlighted display
+snip show my-snippet --raw    # Full file with frontmatter + body
 snip show my-snippet --code   # Only fenced code blocks
 ```
 Options: `--raw`, `--code`

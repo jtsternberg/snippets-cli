@@ -1,13 +1,6 @@
 ---
 name: using-snippets-cli
-description: Manages code snippets via the snip CLI tool. Use when adding, searching, organizing, or retrieving snippets, prompt templates, and code fragments stored as Obsidian-compatible markdown.
-triggers:
-  - snippet management
-  - saving code snippets
-  - searching snippets
-  - prompt templates
-  - snippet library
-  - snip command
+description: Manages code snippets via the snip CLI tool. Use when the user mentions snip, snippets, code fragments, prompt templates, snippet library, or wants to save, search, organize, or retrieve code stored as Obsidian-compatible markdown.
 ---
 
 # Using snippets-cli
@@ -65,4 +58,4 @@ snip find "query" --json | jq '.[].title'
 snip search "query" --json | jq '.[].score'
 ```
 
-See COMMANDS.md for full command reference, WORKFLOWS.md for detailed patterns.
+See [COMMANDS.md](COMMANDS.md) for full command reference, [WORKFLOWS.md](WORKFLOWS.md) for detailed patterns.
