@@ -1,5 +1,7 @@
 # snippets-cli (snip)
 
+<img src="assets/snippet-clipboard.svg" alt="snippets-cli icon" width="100" align="right" />
+
 CLI snippet manager with semantic search, Obsidian-compatible markdown storage, and LLM enrichment.
 
 ## Features
