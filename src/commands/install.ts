@@ -4,7 +4,8 @@ import { dirname, resolve } from "node:path";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { loadConfig } from "../lib/config.js";
+import { loadConfig, getLibraryPath } from "../lib/config.js";
+import { isObsidianInstalled, openVault } from "../lib/obsidian.js";
 
 interface CommandInfo {
   name: string;
@@ -1007,6 +1008,37 @@ export async function installShellCompletions(program: Command, shell?: string):
   console.log(getSourceInstruction(targetShell, outPath, zshSetupMsg));
 }
 
+function installObsidian(): void {
+  if (!isObsidianInstalled()) {
+    console.error(
+      "Obsidian CLI not found. Install it from https://obsidian.md and ensure the `obsidian` command is in your PATH.",
+    );
+    process.exit(1);
+  }
+
+  const config = loadConfig();
+  const libraryPath = getLibraryPath(config);
+
+  if (!existsSync(libraryPath)) {
+    console.error("Snippet library not initialized. Run `snip init` first.");
+    process.exit(1);
+  }
+
+  openVault(libraryPath);
+
+  console.log(`Opened snippet library as Obsidian vault: ${libraryPath}`);
+  console.log();
+  console.log("Recommended Obsidian settings:");
+  console.log('  - Enable Settings → Files & Links → Use [[Wikilinks]]');
+  console.log('  - Set Settings → Files & Links → Default location for new notes → "In the folder specified below"');
+  console.log('  - Set the folder to your default snippet type (e.g. "snippets")');
+  console.log();
+  console.log("Recommended community plugins:");
+  console.log("  - Dataview — query snippets by frontmatter fields");
+  console.log("  - Tag Wrangler — manage and rename tags");
+  console.log("  - Templater — create snippet templates");
+}
+
 export function createInstallCommand(program: Command): Command {
   return new Command("install")
     .description("Install integrations and extensions")
@@ -1032,8 +1064,7 @@ export function createInstallCommand(program: Command): Command {
           break;
 
         case "obsidian":
-          console.error("Obsidian vault setup coming soon.");
-          process.exit(1);
+          installObsidian();
           break;
 
         default:
