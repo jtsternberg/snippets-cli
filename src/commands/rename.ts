@@ -27,13 +27,15 @@ export const renameCommand = new Command("rename")
 
     const { snippet } = result;
     const oldSlug = snippet.slug;
-    const newSlug = slugify(newTitle);
+    // Strip type prefix (e.g. "snippets/new-name" → "new-name")
+    const newName = newTitle.includes("/") ? newTitle.split("/").pop()! : newTitle;
+    const newSlug = slugify(newName);
     const dir = dirname(snippet.filePath);
     const newPath = resolve(dir, `${newSlug}.md`);
 
     // Update frontmatter with new title
     const updated = parseSnippetFile(snippet.filePath);
-    updated.frontmatter.title = newTitle;
+    updated.frontmatter.title = newName;
     writeSnippetFile(snippet.filePath, updated.frontmatter, updated.content);
 
     // Rename the file

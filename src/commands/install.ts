@@ -85,12 +85,21 @@ function generateZshCompletions(commands: CommandInfo[]): string {
 # Regenerate after adding commands: snip install completions zsh
 
 _snip_snippets() {
-  local snippets
-  snippets=(\${(f)"$(snip list --json 2>/dev/null | node -e "
+  local -a groups
+  local json type_name
+  json="$(snip list --json 2>/dev/null)"
+  groups=(\${(f)"$(echo "\$json" | node -e "
     let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-      try{JSON.parse(d).forEach(s=>console.log(s.slug+':'+'['+s.type+'] '+s.title))}catch{}
+      try{const t=[...new Set(JSON.parse(d).map(s=>s.type))];t.forEach(t=>console.log(t))}catch{}
     })")"})
-  _describe 'snippet' snippets
+  for type_name in "\${groups[@]}"; do
+    local -a items
+    items=(\${(f)"$(echo "\$json" | node -e "
+      let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
+        try{JSON.parse(d).filter(s=>s.type==='\${type_name}').forEach(s=>console.log(s.type+'/'+s.slug+':'+s.title))}catch{}
+      })")"})
+    _describe "\${type_name}/" items
+  done
 }
 
 _snip() {
@@ -171,7 +180,7 @@ _snip_completions() {
       local snippets
       snippets="$(snip list --json 2>/dev/null | node -e "
         let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-          try{JSON.parse(d).forEach(s=>console.log(s.slug))}catch{}
+          try{JSON.parse(d).forEach(s=>console.log(s.type+'/'+s.slug))}catch{}
         })")"
       COMPREPLY=( $(compgen -W "\${snippets}" -- "\${cur}") )
       return 0
@@ -214,7 +223,7 @@ function generateFishCompletions(commands: CommandInfo[]): string {
     "function __snip_slugs",
     '  snip list --json 2>/dev/null | node -e "',
     "    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{",
-    "      try{JSON.parse(d).forEach(s=>console.log(s.slug+'\\\\t'+'['+s.type+'] '+s.title))}catch{}",
+    "      try{JSON.parse(d).forEach(s=>console.log(s.type+'/'+s.slug+'\\\\t'+s.title))}catch{}",
     '    })"',
     "end",
     "",
