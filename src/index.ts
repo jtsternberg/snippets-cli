@@ -34,7 +34,7 @@ const program = new Command();
 program
   .name("snip")
   .description("CLI snippet manager with semantic search and Obsidian-compatible storage")
-  .version("0.1.0");
+  .version("0.1.1");
 
 program.addCommand(initCommand);
 program.addCommand(addCommand);
