@@ -12,8 +12,8 @@ The `snip` CLI manages a local library of code snippets, prompt templates, and r
 - `snip` CLI installed and on PATH (`npm i -g snippets-cli` or clone + `npm link`)
 - A snippet library initialized (`snip init`)
 - Optional: `qmd` for semantic search (`snip doctor` to verify)
-- Optional: Ollama for LLM-powered enrichment during import
 - Optional: `gh` CLI for GitHub Gist sync (`gh auth login` to authenticate)
+- Optional: An LLM provider for enrichment — Ollama (default), Gemini, Claude, or OpenAI (`snip config:llm`)
 
 ## Quick Reference
 

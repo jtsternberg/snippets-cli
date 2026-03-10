@@ -1,88 +1,35 @@
-import { loadConfig } from "./config.js";
 import type { SnippetFrontmatter } from "../types/index.js";
+import { callLlm, isLlmAvailable, setProviderOverride, setDebugMode, isValidProvider } from "./providers/index.js";
 
-export interface LlmResponse {
-  text: string;
-}
+// Re-export for backwards compatibility
+export { callLlm, isLlmAvailable, setProviderOverride, setDebugMode, isValidProvider };
 
+/** @deprecated Use isLlmAvailable() instead */
 export async function isOllamaAvailable(): Promise<boolean> {
-  const config = loadConfig();
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    const resp = await fetch(`${config.llm.ollamaHost}/api/tags`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-    return resp.ok;
-  } catch {
-    return false;
-  }
+  return isLlmAvailable();
 }
 
-async function ollamaGenerate(prompt: string, model?: string): Promise<string | null> {
-  const config = loadConfig();
-  const modelName = model || config.llm.ollamaModel;
-
-  try {
-    const resp = await fetch(`${config.llm.ollamaHost}/api/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: modelName,
-        prompt,
-        stream: false,
-        options: { temperature: 0.1 },
-      }),
-    });
-
-    if (!resp.ok) return null;
-    const data = (await resp.json()) as { response: string };
-    return data.response?.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
-async function callLlm(prompt: string): Promise<string | null> {
-  // Try Ollama first
-  if (await isOllamaAvailable()) {
-    const result = await ollamaGenerate(prompt);
-    if (result) return result;
-  }
-
-  // TODO: Add cloud API fallback (OpenAI, Anthropic) when API keys are configured
-
-  return null;
-}
+const VALID_LANGUAGES = [
+  "python", "javascript", "typescript", "bash", "sh", "zsh",
+  "ruby", "go", "rust", "java", "kotlin", "swift", "c", "cpp",
+  "csharp", "php", "perl", "lua", "r", "sql", "html", "css",
+  "json", "yaml", "toml", "xml", "markdown", "prompt", "unknown",
+];
 
 export async function detectLanguage(code: string): Promise<string | null> {
-  const prompt = `Identify the programming language of this code. Respond with ONLY the language name in lowercase (e.g., "python", "bash", "javascript", "typescript", "rust", "go"). If it's a natural language prompt or instruction, respond with "prompt". If unsure, respond with "unknown".
+  const prompt = `Identify the programming language of this code. Respond with ONLY the language name in lowercase (e.g., "python", "bash", "javascript"). If it's a natural language prompt or instruction, respond with "prompt". If unsure, respond with "unknown".
 
 Code:
+---
 ${code.slice(0, 500)}`;
 
   const result = await callLlm(prompt);
   if (!result) return null;
 
-  // Clean up response — extract just the language name
-  const cleaned = result
-    .toLowerCase()
-    .replace(/[^a-z+#]/g, "")
-    .trim();
+  const cleaned = result.toLowerCase().replace(/[^a-z+#]/g, "").trim();
+  if (VALID_LANGUAGES.includes(cleaned)) return cleaned;
 
-  // Validate it looks like a language name
-  const validLanguages = [
-    "python", "javascript", "typescript", "bash", "sh", "zsh",
-    "ruby", "go", "rust", "java", "kotlin", "swift", "c", "cpp",
-    "csharp", "php", "perl", "lua", "r", "sql", "html", "css",
-    "json", "yaml", "toml", "xml", "markdown", "prompt", "unknown",
-  ];
-
-  if (validLanguages.includes(cleaned)) return cleaned;
-
-  // Try to find a valid language in the response
-  for (const lang of validLanguages) {
+  for (const lang of VALID_LANGUAGES) {
     if (result.toLowerCase().includes(lang)) return lang;
   }
 
@@ -97,11 +44,12 @@ export async function suggestTags(
     ? `\nExisting tags in the library: ${existingTags.join(", ")}`
     : "";
 
-  const prompt = `Suggest 2-5 short, relevant tags for this code snippet. Tags should be lowercase, single words or hyphenated. Prefer reusing existing tags when relevant.${existingStr}
+  const prompt = `Suggest 2-5 short, relevant tags for this code snippet. Tags should be lowercase, single words or hyphenated.${existingStr}
 
 Respond with ONLY a comma-separated list of tags, nothing else.
 
 Content:
+---
 ${content.slice(0, 1000)}`;
 
   const result = await callLlm(prompt);
@@ -114,15 +62,15 @@ ${content.slice(0, 1000)}`;
 }
 
 export async function generateTitle(content: string): Promise<string | null> {
-  const prompt = `Generate a short, descriptive title (3-7 words) for this code snippet. The title should describe what the code does. Respond with ONLY the title, nothing else.
+  const prompt = `Generate a short, descriptive title (3-7 words) for this code snippet. Respond with ONLY the title, nothing else.
 
 Content:
+---
 ${content.slice(0, 1000)}`;
 
   const result = await callLlm(prompt);
   if (!result) return null;
 
-  // Clean up — remove quotes, periods, excessive length
   return result
     .replace(/^["']|["']$/g, "")
     .replace(/\.+$/, "")
@@ -130,92 +78,144 @@ ${content.slice(0, 1000)}`;
     .slice(0, 80);
 }
 
-export async function generateAliases(
-  title: string,
-  content: string,
-): Promise<string[]> {
-  const prompt = `Generate 2-4 short alternative names or keywords someone might search for to find this snippet. These should be different phrasings, abbreviations, or related terms — NOT the title itself.
-
-Respond with ONLY a comma-separated list, nothing else.
-
-Title: ${title}
-Content:
-${content.slice(0, 500)}`;
-
-  const result = await callLlm(prompt);
-  if (!result) return [];
-
-  return result
-    .split(",")
-    .map((a) => a.trim().toLowerCase().replace(/[^a-z0-9 -]/g, ""))
-    .filter((a) => a.length > 0 && a.length < 50);
-}
-
-export async function generateDescription(content: string): Promise<string | null> {
-  const prompt = `Write a one-line description of what this code does. Keep it under 100 characters. Respond with ONLY the description.
-
-Content:
-${content.slice(0, 1000)}`;
-
-  const result = await callLlm(prompt);
-  if (!result) return null;
-
-  return result.replace(/\.+$/, "").trim().slice(0, 100);
-}
-
 /**
- * Enrich a snippet's frontmatter by filling in any fields the user didn't provide.
- * Runs LLM calls in parallel for speed. Returns updated frontmatter fields only.
+ * Enrich a snippet's frontmatter in a SINGLE LLM call.
+ * Builds a prompt requesting only the missing fields and expects a JSON response.
  */
 export async function enrichSnippet(
   frontmatter: SnippetFrontmatter,
   content: string,
 ): Promise<Partial<SnippetFrontmatter>> {
-  if (!(await isOllamaAvailable())) return {};
+  if (!(await isLlmAvailable())) return {};
 
+  // Determine which fields need generating
+  const needs: string[] = [];
+  if (!frontmatter.title || frontmatter.title.startsWith("untitled-")) needs.push("title");
+  if (!frontmatter.description) needs.push("description");
+  if (!frontmatter.language) needs.push("language");
+  if (frontmatter.tags.length === 0) needs.push("tags");
+  if (frontmatter.aliases.length === 0) needs.push("aliases");
+
+  if (needs.length === 0) return {};
+
+  // Build field instructions
+  const fieldInstructions: string[] = [];
+  const exampleJson: Record<string, unknown> = {};
+
+  if (needs.includes("title")) {
+    fieldInstructions.push('- "title": A short descriptive title, 3-7 words');
+    exampleJson.title = "Fetch API Error Handler";
+  }
+  if (needs.includes("description")) {
+    fieldInstructions.push('- "description": One-line description, under 100 characters');
+    exampleJson.description = "Wraps fetch with retry logic and error handling";
+  }
+  if (needs.includes("language")) {
+    fieldInstructions.push(`- "language": Programming language in lowercase (one of: ${VALID_LANGUAGES.slice(0, 10).join(", ")}, etc). Use "prompt" for natural language instructions`);
+    exampleJson.language = "javascript";
+  }
+  if (needs.includes("tags")) {
+    fieldInstructions.push('- "tags": Array of 2-5 lowercase tags, single words or hyphenated');
+    exampleJson.tags = ["fetch", "error-handling", "async"];
+  }
+  if (needs.includes("aliases")) {
+    fieldInstructions.push('- "aliases": Array of 2-4 alternative search terms (not the title)');
+    exampleJson.aliases = ["http request", "api call", "fetch wrapper"];
+  }
+
+  const prompt = `Analyze this code snippet and return a JSON object with the following fields:
+
+${fieldInstructions.join("\n")}
+
+Respond with ONLY valid JSON, no markdown fences, no explanation. Example response format:
+${JSON.stringify(exampleJson)}
+
+Content:
+---
+${content.slice(0, 1500)}`;
+
+  const result = await callLlm(prompt, "enrich");
+  if (!result) return {};
+
+  // Extract JSON from response (handle markdown fences, extra text)
+  const parsed = parseJsonResponse(result);
+  if (!parsed) return {};
+
+  // Validate and build updates
   const updates: Partial<SnippetFrontmatter> = {};
-  const tasks: Promise<void>[] = [];
 
-  if (!frontmatter.description) {
-    tasks.push(
-      generateDescription(content).then((desc) => {
-        if (desc) updates.description = desc;
-      }),
-    );
+  if (needs.includes("title") && typeof parsed.title === "string" && parsed.title.length > 0) {
+    updates.title = parsed.title.replace(/^["']|["']$/g, "").replace(/\.+$/, "").trim().slice(0, 80);
+  }
+  if (needs.includes("description") && typeof parsed.description === "string" && parsed.description.length > 0) {
+    updates.description = parsed.description.replace(/\.+$/, "").trim().slice(0, 100);
+  }
+  if (needs.includes("language") && typeof parsed.language === "string") {
+    const lang = parsed.language.toLowerCase().replace(/[^a-z+#]/g, "").trim();
+    if (VALID_LANGUAGES.includes(lang) && lang !== "unknown") {
+      updates.language = lang;
+    }
+  }
+  if (needs.includes("tags") && Array.isArray(parsed.tags)) {
+    const tags = parsed.tags
+      .map((t: unknown) => String(t).trim().toLowerCase().replace(/[^a-z0-9-]/g, ""))
+      .filter((t: string) => t.length > 0 && t.length < 30);
+    if (tags.length > 0) updates.tags = tags;
+  }
+  if (needs.includes("aliases") && Array.isArray(parsed.aliases)) {
+    const aliases = parsed.aliases
+      .map((a: unknown) => String(a).trim().toLowerCase().replace(/[^a-z0-9 -]/g, ""))
+      .filter((a: string) => a.length > 0 && a.length < 50);
+    if (aliases.length > 0) updates.aliases = aliases;
   }
 
-  if (frontmatter.aliases.length === 0) {
-    tasks.push(
-      generateAliases(frontmatter.title, content).then((aliases) => {
-        if (aliases.length > 0) updates.aliases = aliases;
-      }),
-    );
+  // Fact-check: verify language detection with a focused follow-up prompt.
+  // Small models can misclassify, so give them a second look.
+  if (updates.language) {
+    const verified = await verifyLanguage(content, updates.language);
+    if (verified && verified !== updates.language) {
+      updates.language = verified;
+    }
   }
 
-  if (!frontmatter.language) {
-    tasks.push(
-      detectLanguage(content).then((lang) => {
-        if (lang && lang !== "unknown") updates.language = lang;
-      }),
-    );
-  }
-
-  if (frontmatter.tags.length === 0) {
-    tasks.push(
-      suggestTags(content).then((tags) => {
-        if (tags.length > 0) updates.tags = tags;
-      }),
-    );
-  }
-
-  if (!frontmatter.title || frontmatter.title.startsWith("untitled-")) {
-    tasks.push(
-      generateTitle(content).then((title) => {
-        if (title) updates.title = title;
-      }),
-    );
-  }
-
-  await Promise.all(tasks);
   return updates;
+}
+
+/**
+ * Quick follow-up to verify the detected language is correct.
+ * Gives the model a chance to reconsider with a focused question.
+ */
+async function verifyLanguage(content: string, detectedLang: string): Promise<string | null> {
+  const prompt = `A language detector classified the following content as "${detectedLang}".
+
+Look at the content carefully. Is "${detectedLang}" the correct language? Consider whether it might actually be a different programming language, a shell script, a config format, or even a natural language prompt/instruction meant for an LLM.
+
+Respond with ONLY the correct language name in lowercase (e.g., "bash", "python", "yaml", "prompt"). If "${detectedLang}" is correct, respond with "${detectedLang}".
+
+Content:
+---
+${content.slice(0, 1000)}`;
+
+  const result = await callLlm(prompt, "verify-language");
+  if (!result) return null;
+
+  const cleaned = result.toLowerCase().trim().replace(/[^a-z+#]/g, "");
+  if (VALID_LANGUAGES.includes(cleaned)) return cleaned;
+  return detectedLang;
+}
+
+function parseJsonResponse(text: string): Record<string, unknown> | null {
+  // Strip markdown code fences if present
+  let cleaned = text.trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/, "");
+
+  // Try to find JSON object in the response
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+
+  try {
+    return JSON.parse(jsonMatch[0]) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }

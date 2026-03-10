@@ -9,7 +9,7 @@
       "name": "snippets-cli",
       "source": "./claude-plugin",
       "description": "Code snippet management with semantic search and Obsidian-compatible markdown storage",
-      "version": "0.1.0"
+      "version": "0.1.1"
     }
   ]
 }

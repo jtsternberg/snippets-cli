@@ -64,7 +64,7 @@ snip import ./src/auth.ts ./src/api.ts ./src/hooks.ts
 # Import from a URL
 snip import https://raw.githubusercontent.com/user/repo/main/snippet.py
 
-# Import without LLM enrichment (faster, no Ollama needed)
+# Import without LLM enrichment (faster, no LLM needed)
 snip import ./scripts/*.sh --no-enrich
 
 # Import with explicit metadata

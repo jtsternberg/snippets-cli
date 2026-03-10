@@ -4,6 +4,7 @@ import { resolve, dirname } from "node:path";
 import { resolveSnippet, getFuzzyMatches, getAllSnippets } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { slugify } from "../lib/slug.js";
+import { loadConfig } from "../lib/config.js";
 import { EXIT_CODES } from "../types/index.js";
 
 export const renameCommand = new Command("rename")
@@ -27,13 +28,19 @@ export const renameCommand = new Command("rename")
 
     const { snippet } = result;
     const oldSlug = snippet.slug;
-    const newSlug = slugify(newTitle);
+    // Strip type prefix (e.g. "snippets/new-name" → "new-name") but preserve
+    // legitimate slashes in titles (e.g. "HTTP/2 Client")
+    const config = loadConfig();
+    const slashIdx = newTitle.indexOf("/");
+    const maybeType = slashIdx > 0 ? newTitle.slice(0, slashIdx) : "";
+    const newName = config.types.includes(maybeType) ? newTitle.slice(slashIdx + 1) : newTitle;
+    const newSlug = slugify(newName);
     const dir = dirname(snippet.filePath);
     const newPath = resolve(dir, `${newSlug}.md`);
 
     // Update frontmatter with new title
     const updated = parseSnippetFile(snippet.filePath);
-    updated.frontmatter.title = newTitle;
+    updated.frontmatter.title = newName;
     writeSnippetFile(snippet.filePath, updated.frontmatter, updated.content);
 
     // Rename the file

@@ -7,7 +7,15 @@ import { editCommand } from "./commands/edit.js";
 import { rmCommand } from "./commands/rm.js";
 import { listCommand } from "./commands/list.js";
 import { tagsCommand } from "./commands/tags.js";
-import { configCommand, configTypesAddCommand } from "./commands/config.js";
+import {
+  configCommand,
+  configTypesAddCommand,
+  configLlmCommand,
+  configLlmProviderCommand,
+  configLlmFallbackCommand,
+  configLlmKeyCommand,
+  configLlmModelCommand,
+} from "./commands/config.js";
 import { renameCommand } from "./commands/rename.js";
 import { searchCommand } from "./commands/search.js";
 import { findCommand } from "./commands/find.js";
@@ -20,13 +28,14 @@ import { createUpgradeCommand } from "./commands/upgrade.js";
 import { exportCommand } from "./commands/export.js";
 import { execCommand } from "./commands/exec.js";
 import { syncCommand } from "./commands/sync.js";
+import { enrichCommand } from "./commands/enrich.js";
 
 const program = new Command();
 
 program
   .name("snip")
   .description("CLI snippet manager with semantic search and Obsidian-compatible storage")
-  .version("0.1.0");
+  .version("0.1.1");
 
 program.addCommand(initCommand);
 program.addCommand(addCommand);
@@ -38,6 +47,11 @@ program.addCommand(listCommand);
 program.addCommand(tagsCommand);
 program.addCommand(configCommand);
 program.addCommand(configTypesAddCommand);
+program.addCommand(configLlmCommand);
+program.addCommand(configLlmProviderCommand);
+program.addCommand(configLlmFallbackCommand);
+program.addCommand(configLlmKeyCommand);
+program.addCommand(configLlmModelCommand);
 program.addCommand(renameCommand);
 program.addCommand(searchCommand);
 program.addCommand(findCommand);
@@ -48,6 +62,7 @@ program.addCommand(importCommand);
 program.addCommand(exportCommand);
 program.addCommand(execCommand);
 program.addCommand(syncCommand);
+program.addCommand(enrichCommand);
 program.addCommand(createInstallCommand(program));
 program.addCommand(createUpgradeCommand(program));
 

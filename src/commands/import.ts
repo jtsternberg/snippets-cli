@@ -11,7 +11,7 @@ import {
 import { uniqueSlug } from "../lib/slug.js";
 import { EXIT_CODES } from "../types/index.js";
 import { updateAndEmbed } from "../lib/qmd.js";
-import { enrichSnippet } from "../lib/llm.js";
+import { enrichSnippet, setProviderOverride, setDebugMode, isValidProvider } from "../lib/llm.js";
 import { requireGh, parseGistId, fetchGist } from "../lib/gist.js";
 
 // Map file extensions to language names
@@ -165,7 +165,18 @@ export const importCommand = new Command("import")
   .option("--tags <tags>", "Comma-separated tags to add")
   .option("--no-enrich", "Skip LLM enrichment")
   .option("--from-gist <url-or-id>", "Import all files from a GitHub Gist")
+  .option("--provider <provider>", "LLM provider override (ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto)")
+  .option("--debug", "Log LLM provider commands and responses")
   .action(async (sources: string[], opts) => {
+    if (opts.debug) setDebugMode(true);
+    if (opts.provider) {
+      if (!isValidProvider(opts.provider)) {
+        console.error(`Invalid provider "${opts.provider}". Use: ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto`);
+        process.exit(EXIT_CODES.CONFIG_ERROR);
+      }
+      setProviderOverride(opts.provider);
+    }
+
     const hasSources = Array.isArray(sources) && sources.length > 0;
 
     if (opts.fromGist && hasSources) {
@@ -181,7 +192,6 @@ export const importCommand = new Command("import")
       console.error("No sources specified. Provide files, URLs, or use --from-gist.");
       process.exit(EXIT_CODES.GENERAL_ERROR);
     }
-
     const config = loadConfig();
     const libPath = getLibraryPath(config);
 

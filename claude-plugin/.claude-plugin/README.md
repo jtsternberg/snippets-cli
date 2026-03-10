@@ -25,7 +25,7 @@ Restart Claude Code after installation to activate.
 - `snip` CLI installed and on PATH (`npm i -g snippets-cli` or clone + `npm link`)
 - A snippet library initialized (`snip init`)
 - Optional: `qmd` for semantic search (`snip doctor` to verify)
-- Optional: Ollama for LLM enrichment
+- Optional: An LLM provider for enrichment (Ollama, Gemini, Claude, or OpenAI — see `snip config:llm`)
 
 ## What's Included
 

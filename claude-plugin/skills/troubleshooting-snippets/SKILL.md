@@ -19,7 +19,7 @@ description: Diagnoses and resolves snip CLI issues. Use when snip commands fail
 | "Library not found" | No init or bad path | `snip init` or fix `snip config library.path` |
 | "qmd not found" | qmd not installed | Install qmd, then `snip doctor` |
 | Search returns nothing | Index stale or empty | Re-index with `snip doctor` |
-| "Ollama not available" | Ollama not running | Start Ollama or use `--no-enrich` |
+| "No LLM provider available" | No provider configured/running | Start Ollama, set an API key (`snip config:llm:key`), or use `--no-enrich` |
 | Import fails | Bad URL or file path | Check path exists, URL is accessible |
 | Completions not working | Shell config stale | `snip install completions zsh` |
 
