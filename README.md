@@ -66,7 +66,8 @@ snip show my-snippet               # Display in terminal
 | `snip search <query>` | Semantic search (`--json`, `-n`, `--mode`) |
 | `snip find <query>` | Fuzzy text search |
 | `snip rename <name> <new-name>` | Rename a snippet |
-| `snip run <name>` | Execute a snippet as a shell script |
+| `snip run <name>` | Fill template variables and copy result (`--var key=value`) |
+| `snip exec <name>` | Execute a snippet as a script (`--shell`, `--dry-run`) |
 | `snip link <name>` | Create symlink to snippet |
 | `snip import <sources...>` | Import from files, globs, or URLs (`--no-enrich`, `--provider`) |
 | `snip export [name]` | Export to JSON or Markdown (`--format`, `--output`, `--to-gist`) |
