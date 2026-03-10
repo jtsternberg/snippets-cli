@@ -164,7 +164,7 @@ export const importCommand = new Command("import")
   .option("-t, --type <type>", "Target snippet type (directory)")
   .option("--tags <tags>", "Comma-separated tags to add")
   .option("--no-enrich", "Skip LLM enrichment")
-  .option("--provider <provider>", "LLM provider override (ollama, gemini, claude, openai, auto)")
+  .option("--provider <provider>", "LLM provider override (ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto)")
   .option("--debug", "Log LLM provider commands and responses")
   .action(async (sources: string[], opts) => {
     if (opts.debug) setDebugMode(true);

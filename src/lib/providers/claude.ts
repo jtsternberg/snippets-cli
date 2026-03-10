@@ -36,8 +36,7 @@ export class ClaudeProvider implements LlmProvider {
           temperature: 0.1,
           messages: [{ role: "user", content: prompt }],
         }),
-      });
-      clearTimeout(timeout);
+      }).finally(() => clearTimeout(timeout));
 
       if (!resp.ok) return null;
       const data = (await resp.json()) as {

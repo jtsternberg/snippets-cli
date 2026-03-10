@@ -33,8 +33,7 @@ export class GeminiProvider implements LlmProvider {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.1 },
         }),
-      });
-      clearTimeout(timeout);
+      }).finally(() => clearTimeout(timeout));
 
       if (!resp.ok) return null;
       const data = (await resp.json()) as {

@@ -11,8 +11,7 @@ export class OllamaProvider implements LlmProvider {
       const timeout = setTimeout(() => controller.abort(), 2000);
       const resp = await fetch(`${config.llm.ollamaHost}/api/tags`, {
         signal: controller.signal,
-      });
-      clearTimeout(timeout);
+      }).finally(() => clearTimeout(timeout));
       return resp.ok;
     } catch {
       return false;
@@ -34,8 +33,7 @@ export class OllamaProvider implements LlmProvider {
           stream: false,
           options: { temperature: 0.1 },
         }),
-      });
-      clearTimeout(timeout);
+      }).finally(() => clearTimeout(timeout));
 
       if (!resp.ok) return null;
       const data = (await resp.json()) as { response: string };

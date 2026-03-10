@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
 
 import { writeSnippetFile } from "../lib/frontmatter.js";
+import { uniqueSlug } from "../lib/slug.js";
 import { enrichSnippet, isLlmAvailable, setProviderOverride, setDebugMode, isValidProvider } from "../lib/llm.js";
 import { loadConfig, getLibraryPath } from "../lib/config.js";
 import { EXIT_CODES } from "../types/index.js";
@@ -18,7 +19,7 @@ export const enrichCommand = new Command("enrich")
   .option("--force", "Overwrite existing metadata fields")
   .option("--type <type>", "Filter by snippet type (with --all)")
   .option("--dry-run", "Show what would be updated without writing")
-  .option("--provider <provider>", "LLM provider override (ollama, gemini, claude, openai, auto)")
+  .option("--provider <provider>", "LLM provider override (ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto)")
   .option("--debug", "Log LLM provider commands and responses")
   .action(async (name: string | undefined, opts: {
     all?: boolean;
@@ -152,12 +153,12 @@ async function applyEnrichment(
     const oldLang = snippet.frontmatter.language || "";
     const newLang = updates.language;
     if (oldLang !== newLang) {
-      // Replace existing fence language or add to bare fences
-      content = content.replace(/```\w*/g, (match) => {
-        if (match === "```" || match === `\`\`\`${oldLang}`) {
-          return `\`\`\`${newLang}`;
+      // Replace opening fence language only (line must start with ```)
+      content = content.replace(/^(```)(\w*)/gm, (_match, ticks, lang) => {
+        if (lang === "" || lang === oldLang) {
+          return `${ticks}${newLang}`;
         }
-        return match;
+        return `${ticks}${lang}`;
       });
     }
   }
@@ -174,7 +175,8 @@ async function applyEnrichment(
     const libPath = getLibraryPath();
     const promptsDir = resolve(libPath, "prompts");
     mkdirSync(promptsDir, { recursive: true });
-    const newPath = resolve(promptsDir, `${snippet.slug}.md`);
+    const slug = uniqueSlug(snippet.slug, promptsDir);
+    const newPath = resolve(promptsDir, `${slug}.md`);
     writeSnippetFile(filePath, updatedFm, content);
     renameSync(filePath, newPath);
     return { updates, movedTo: newPath };

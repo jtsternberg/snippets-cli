@@ -26,7 +26,7 @@ export const addCommand = new Command("add")
   .option("--title <title>", "Snippet title")
   .option("--from-clipboard", "Create snippet from clipboard content")
   .option("--content <content>", "Snippet content (non-interactive)")
-  .option("--provider <provider>", "LLM provider override (ollama, gemini, claude, openai, auto)")
+  .option("--provider <provider>", "LLM provider override (ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto)")
   .option("--debug", "Log LLM provider commands and responses")
   .action(async (opts) => {
     if (opts.debug) setDebugMode(true);
