@@ -36,6 +36,7 @@ function introspectProgram(program: Command): CommandInfo[] {
       "run",
       "link",
       "rename",
+      "export",
     ];
     const takesSnippetArg = snippetCommands.includes(name);
 
