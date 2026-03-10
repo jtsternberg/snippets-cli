@@ -1049,7 +1049,7 @@ function installObsidian(): void {
   }
 
   console.log(`Step ${step++}: Recommended settings`);
-  console.log('  - Settings → Files & Links → Use [[Wikilinks]] → Enable');
+  console.log('  - Settings → Files & Links → Use [[Wikilinks]] → Enable (default)');
   console.log('  - Settings → Files & Links → Default location for new notes → "In the folder specified below"');
   console.log('  - Set the folder to your default snippet type (e.g. "snippets")');
   console.log();
