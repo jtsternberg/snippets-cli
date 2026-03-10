@@ -136,6 +136,12 @@ export const addCommand = new Command("add")
       if (enriched.tags?.length && !tags.length) tags = enriched.tags;
     }
 
+    // Fallback title if none was provided and enrichment did not set one
+    if (!title) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      title = `untitled-${timestamp}`;
+    }
+
     // Wrap content in code fence after enrichment so language is available
     if (!content.includes("```") && language) {
       content = `\n\`\`\`${language}\n${content}\n\`\`\`\n`;

@@ -18,9 +18,8 @@ export function cliExec(opts: {
   const { cmd, args, prompt, timeout = 45_000 } = opts;
   const tmpPath = join(tmpdir(), `snip-prompt-${Date.now()}.txt`);
 
-  writeFileSync(tmpPath, prompt, "utf-8");
-
   if (isDebugMode()) {
+    writeFileSync(tmpPath, prompt, "utf-8");
     console.error(`[debug] Prompt written to: ${tmpPath}`);
     console.error(`[debug] $ cat ${tmpPath} | ${cmd} ${args.join(" ")}`);
   }

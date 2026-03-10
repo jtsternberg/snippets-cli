@@ -163,6 +163,7 @@ export const configLlmKeyCommand = new Command("config:llm:key")
     config.llm[configKey] = key;
     saveConfig(config);
     console.log(`API key set for ${provider}.`);
+    console.log(`Tip: For better security, use environment variables instead (e.g. GEMINI_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY).`);
   });
 
 // Set model for a provider
