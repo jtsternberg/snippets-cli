@@ -1018,6 +1018,35 @@ function installObsidian(): void {
     process.exit(1);
   }
 
+  // Install .base files for each type directory
+  for (const type of config.types) {
+    const typeDir = resolve(libraryPath, type);
+    if (!existsSync(typeDir)) continue;
+    const label = type.charAt(0).toUpperCase() + type.slice(1);
+    const basePath = resolve(typeDir, `${label}.base`);
+    if (existsSync(basePath)) continue;
+    const content = [
+      "filters:",
+      "  and:",
+      `    - file.folder == "${type}"`,
+      '    - file.ext != "base"',
+      "views:",
+      "  - type: table",
+      "    name: Table",
+      "    order:",
+      "      - file.name",
+      "      - title",
+      "      - date",
+      "      - modified",
+      "      - language",
+      "      - tags",
+      "",
+    ].join("\n");
+    writeFileSync(basePath, content, "utf-8");
+    console.log(`Created ${basePath}`);
+  }
+  console.log();
+
   const hasCli = isObsidianCliAvailable();
   const vaultName = hasCli ? getVaultName(libraryPath) : null;
   let step = 1;
