@@ -2,18 +2,24 @@
 
 <img src="assets/snippet-clipboard.svg" alt="snippets-cli icon" width="100" align="right" />
 
-CLI snippet manager with semantic search, Obsidian-compatible markdown storage, and LLM enrichment.
+CLI for your **snippet and prompt library**: code snippets, LLM prompts, and reusable content — with semantic search, Obsidian-compatible markdown storage, and LLM enrichment.
+
+## What you can store
+
+- 📋 **Code snippets** — boilerplate, helpers, and reference fragments (by language)
+- 💬 **Prompt library** — system prompts, instruction templates, and AI prompts with `{{variable}}` placeholders; run with `snip run <name>` and pass variables at use time
+- 🏷️ **Custom types** — add your own (e.g. `checklists`, `templates`, `agents`) via `snip config:types:add <name>`
 
 ## Features
 
-- **Local-first markdown storage** — Obsidian-compatible, plain files you own
-- **Semantic search** via [qmd](https://github.com/tobilu/qmd) vector embeddings
-- **LLM-powered auto-enrichment** — language detection, tags, and descriptions via Ollama
-- **Alfred workflow** integration for macOS
-- **Shell completions** for bash, zsh, and fish
-- **Multiple snippet types** — snippets, prompts, or custom categories
-- **Import** from files, globs, or URLs
-- **Export** to JSON or Markdown
+- 📁 **Local-first markdown storage** — Obsidian-compatible, plain files you own
+- 🔍 **Semantic search** via [qmd](https://github.com/tobilu/qmd) vector embeddings
+- 🤖 **LLM enrichment** — paste from clipboard and get title, description, tags, and language auto-generated (Ollama); no need to fill metadata by hand
+- 💬 **Prompt templates** — first-class `prompts/` type and `{{var}}` syntax; `snip run` fills variables
+- ⌘ **Alfred workflow** integration for macOS
+- ⚡ **Shell completions** for bash, zsh, and fish
+- 📥 **Import** from files, globs, or URLs
+- 📤 **Export** to JSON or Markdown
 
 ## Installation
 
@@ -37,8 +43,10 @@ npm link
 ```bash
 snip init                          # Initialize library at ~/snippets
 snip add --from-clipboard          # Add snippet from clipboard
+snip add --type prompts --title "Code review" --lang prompt  # Add to prompt library
 snip add --title "My Script" --lang bash  # Add with metadata
 snip search "api helper"           # Semantic search
+snip run my-prompt -- language=TypeScript  # Run prompt template with variables
 snip copy my-snippet               # Copy to clipboard
 snip show my-snippet               # Display in terminal
 ```
@@ -119,7 +127,7 @@ async function apiRequest(url, options = {}) {
 ```
 ```
 
-The `related` field uses Obsidian-style wikilinks for cross-referencing between snippets.
+The `related` field uses Obsidian-style wikilinks for cross-referencing. For prompts, set `type: prompts`, use `language: prompt` and optional `{{variable}}` placeholders in the body; use `snip run <name> -- var=value` to fill and run them.
 
 ## Integrations
 
@@ -175,6 +183,7 @@ This repository includes a [Claude Code plugin](claude-plugin/.claude-plugin/REA
 ### Quick Example
 
 ```
+You: "Save this as a prompt in my prompt library"
 You: "Save this function to my snippets with tags js and util"
 You: "Find all my Python snippets about error handling"
 You: "Run my code-review prompt template with language=TypeScript"
