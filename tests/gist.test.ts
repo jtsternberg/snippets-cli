@@ -171,6 +171,32 @@ describe("snip export --to-gist", () => {
   });
 });
 
+describe("snip sync", () => {
+  it("reports no linked snippets when none have gist_id", () => {
+    // Create a fresh snippet without gist_id
+    snip([
+      "add",
+      "--title", "No Gist Snippet",
+      "--lang", "bash",
+      "--content", "echo no gist",
+    ]);
+
+    const output = snip(["sync"]);
+    expect(output).toContain("No snippets linked to gists");
+
+    // Clean up
+    snip(["rm", "no-gist-snippet", "--force"]);
+  });
+
+  it("supports --dry-run flag", { timeout: 30000 }, () => {
+    if (!ghAvailable) return;
+
+    // This test only runs if there are gist-linked snippets
+    const output = snip(["sync", "--dry-run"]);
+    expect(output).toMatch(/Sync complete:|No snippets linked/);
+  });
+});
+
 describe("snip import --from-gist", () => {
   it("requires --from-gist value", () => {
     const err = snipErr(["import"]);

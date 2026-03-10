@@ -175,7 +175,11 @@ async function exportToGist(
     if (snippets.length === 1) {
       const gistId = gistUrl.split("/").pop()!;
       const s = snippets[0];
-      writeSnippetFile(s.filePath, { ...s.frontmatter, gist_id: gistId }, s.content);
+      writeSnippetFile(s.filePath, {
+        ...s.frontmatter,
+        gist_id: gistId,
+        gist_updated: new Date().toISOString(),
+      }, s.content);
       console.log(`Saved gist_id to ${s.slug}`);
     }
   } finally {
@@ -194,6 +198,10 @@ function updateGist(snippet: Snippet): void {
     execFileSync("gh", ["gist", "edit", gistId, "--add", tmpPath], {
       stdio: "pipe",
     });
+    writeSnippetFile(snippet.filePath, {
+      ...snippet.frontmatter,
+      gist_updated: new Date().toISOString(),
+    }, snippet.content);
     console.log(`Updated gist: https://gist.github.com/${gistId}`);
   } finally {
     try { unlinkSync(tmpPath); } catch {}

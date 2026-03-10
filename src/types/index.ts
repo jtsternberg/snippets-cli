@@ -11,6 +11,7 @@ export interface SnippetFrontmatter {
   related: string[];
   variables: string[];
   gist_id: string;
+  gist_updated: string;
 }
 
 export interface Snippet {
