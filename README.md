@@ -14,7 +14,7 @@ CLI for your **snippet and prompt library**: code snippets, LLM prompts, and reu
 
 - 📁 **Local-first markdown storage** — Obsidian-compatible, plain files you own
 - 🔍 **Semantic search** via [qmd](https://github.com/tobilu/qmd) vector embeddings
-- 🤖 **LLM enrichment** — paste from clipboard and get title, description, tags, and language auto-generated (Ollama); no need to fill metadata by hand
+- 🤖 **BYOL (Bring Your Own LLM)** — auto-generate title, description, tags, and language with your choice of Ollama, Gemini, Claude, or OpenAI
 - 💬 **Prompt templates** — first-class `prompts/` type and `{{var}}` syntax; `snip run` fills variables
 - ⌘ **Alfred workflow** integration for macOS
 - ⚡ **Shell completions** for bash, zsh, and fish
@@ -56,7 +56,7 @@ snip show my-snippet               # Display in terminal
 | Command | Description |
 | --- | --- |
 | `snip init` | Initialize snippet library and config |
-| `snip add` | Add a new snippet (interactive or scripted) |
+| `snip add` | Add a new snippet (interactive or scripted, `--provider`) |
 | `snip show <name>` | Display snippet (`--raw`, `--code`) |
 | `snip copy <name>` | Copy snippet to clipboard |
 | `snip edit <name>` | Open snippet in editor |
@@ -68,10 +68,16 @@ snip show my-snippet               # Display in terminal
 | `snip rename <name> <new-name>` | Rename a snippet |
 | `snip run <name>` | Execute a snippet as a shell script |
 | `snip link <name>` | Create symlink to snippet |
-| `snip import <sources...>` | Import from files, globs, or URLs |
+| `snip import <sources...>` | Import from files, globs, or URLs (`--no-enrich`, `--provider`) |
 | `snip export [name]` | Export to JSON or Markdown (`--format`, `--output`, `--to-gist`) |
+| `snip enrich [name]` | Re-run LLM enrichment (`--all`, `--force`, `--dry-run`, `--provider`) |
 | `snip config` | View or set configuration |
 | `snip config:types:add <name>` | Add a snippet type |
+| `snip config:llm` | View LLM provider configuration |
+| `snip config:llm:provider <name>` | Set primary LLM provider |
+| `snip config:llm:fallback <name>` | Set fallback LLM provider |
+| `snip config:llm:key <provider> <key>` | Set API key for a provider |
+| `snip config:llm:model <provider> <model>` | Set model for a provider |
 | `snip install <integration>` | Install integrations (completions, alfred, obsidian) |
 | `snip upgrade` | Update snip and reinstall integrations |
 | `snip doctor` | Health check |
@@ -86,8 +92,19 @@ Config file: `~/.config/snip/config.json`
 | `types` | Snippet type directories | `["snippets", "prompts"]` |
 | `defaultType` | Default type for new snippets | — |
 | `editor` | Editor for `snip edit` (falls back to `$EDITOR`) | — |
-| `llm.provider` | LLM provider | `"ollama"` |
+| `llm.provider` | LLM provider (`ollama`, `gemini`, `gemini-cli`, `claude`, `claude-cli`, `openai`, `openai-cli`, `auto`) | `"ollama"` |
+| `llm.fallbackProvider` | Fallback provider (same options, or `null`) | `null` |
 | `llm.ollamaModel` | Ollama model | `"qwen2.5-coder:7b"` |
+| `llm.ollamaHost` | Ollama API host | `"http://localhost:11434"` |
+| `llm.geminiApiKey` | Gemini API key (or use `GEMINI_API_KEY` env var) | `null` |
+| `llm.geminiModel` | Gemini API model | `"gemini-2.5-flash"` |
+| `llm.geminiCliModel` | Gemini CLI model (when using `gemini-cli`) | `"gemini-2.5-flash"` |
+| `llm.anthropicApiKey` | Anthropic API key (or use `ANTHROPIC_API_KEY` env var) | `null` |
+| `llm.anthropicModel` | Claude API model | `"claude-3-5-haiku-latest"` |
+| `llm.claudeCliModel` | Claude CLI model (when using `claude` CLI) | `"haiku"` |
+| `llm.openaiApiKey` | OpenAI API key (or use `OPENAI_API_KEY` env var) | `null` |
+| `llm.openaiModel` | OpenAI API model | `"gpt-4o-mini"` |
+| `llm.codexCliModel` | OpenAI CLI model (when using `openai-cli`) | `"o4-mini"` |
 | `qmd.collectionName` | qmd collection name | — |
 | `alfred.maxResults` | Max Alfred results | — |
 
@@ -95,6 +112,9 @@ Config file: `~/.config/snip/config.json`
 
 - `SNIP_LIBRARY` — Override library path
 - `EDITOR` — Fallback editor
+- `GEMINI_API_KEY` — Gemini API key (overrides config)
+- `ANTHROPIC_API_KEY` — Anthropic/Claude API key (overrides config)
+- `OPENAI_API_KEY` — OpenAI API key (overrides config)
 
 ## Snippet Format
 
@@ -167,13 +187,48 @@ Install [qmd](https://github.com/tobilu/qmd) for semantic/vector search:
 npm i -g @tobilu/qmd
 ```
 
-### LLM Enrichment (Ollama)
+### BYOL: Bring Your Own LLM
 
-Install [Ollama](https://ollama.ai) for auto-enrichment (language detection, tags, descriptions):
+Snip uses an LLM to auto-generate metadata (title, description, tags, language, aliases) when you add or import snippets. Choose from four providers:
 
+**Ollama** (default — local, free):
 ```bash
 brew install ollama
 ollama pull qwen2.5-coder:7b
+```
+
+**Gemini** (cloud):
+```bash
+snip config:llm:provider gemini
+snip config:llm:key gemini YOUR_API_KEY
+# or: export GEMINI_API_KEY=YOUR_API_KEY
+```
+
+**Claude** (cloud API or local CLI):
+```bash
+snip config:llm:provider claude
+snip config:llm:key claude YOUR_API_KEY
+# or: export ANTHROPIC_API_KEY=YOUR_API_KEY
+# If no API key, falls back to the `claude` CLI if installed
+```
+
+**OpenAI** (cloud):
+```bash
+snip config:llm:provider openai
+snip config:llm:key openai YOUR_API_KEY
+# or: export OPENAI_API_KEY=YOUR_API_KEY
+```
+
+**Auto mode** — tries CLI tools first (gemini-cli, claude-cli, openai-cli), then Ollama, then cloud APIs (Gemini, Claude, OpenAI) until one succeeds:
+```bash
+snip config:llm:provider auto
+```
+
+Re-enrich existing snippets after switching providers:
+```bash
+snip enrich my-snippet          # Single snippet
+snip enrich --all               # All snippets with missing metadata
+snip enrich --all --force       # Regenerate all metadata
 ```
 
 ## Claude Code Plugin

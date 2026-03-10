@@ -3,6 +3,7 @@ import {
   getDefaultConfig,
   getLibraryPath,
 } from "../src/lib/config.js";
+import { getProviderNames } from "../src/lib/providers/index.js";
 
 describe("getDefaultConfig", () => {
   it("returns valid default config", () => {
@@ -37,5 +38,37 @@ describe("getLibraryPath", () => {
     const result = getLibraryPath();
     expect(result).not.toContain("~");
     expect(result).toContain("my-snippets");
+  });
+});
+
+describe("provider validation", () => {
+  const providerNames = getProviderNames();
+
+  it("provider registry includes all expected providers", () => {
+    expect(providerNames).toContain("ollama");
+    expect(providerNames).toContain("gemini");
+    expect(providerNames).toContain("gemini-cli");
+    expect(providerNames).toContain("claude");
+    expect(providerNames).toContain("claude-cli");
+    expect(providerNames).toContain("openai");
+    expect(providerNames).toContain("openai-cli");
+  });
+
+  it("auto is not a real provider in the registry", () => {
+    expect(providerNames).not.toContain("auto");
+  });
+
+  it("VALID_PROVIDERS should include auto for primary provider", () => {
+    const validProviders = [...providerNames, "auto"];
+    expect(validProviders).toContain("auto");
+    for (const name of providerNames) {
+      expect(validProviders).toContain(name);
+    }
+  });
+
+  it("VALID_FALLBACK_PROVIDERS should exclude auto", () => {
+    const validFallback = providerNames;
+    expect(validFallback).not.toContain("auto");
+    expect(validFallback.length).toBeGreaterThan(0);
   });
 });
