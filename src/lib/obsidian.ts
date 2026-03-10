@@ -40,14 +40,12 @@ export function isObsidianRunning(): boolean {
   }
 }
 
-export function openVault(vaultPath: string): void {
-  const absPath = resolve(vaultPath);
-  const uri = `obsidian://open?path=${encodeURIComponent(absPath)}`;
-
-  if (process.platform === "darwin") {
-    execSync(`open "${uri}"`);
-  } else {
-    execSync(`xdg-open "${uri}"`);
+export function isObsidianCliAvailable(): boolean {
+  try {
+    execSync("which obsidian", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
   }
 }
 

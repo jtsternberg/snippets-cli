@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFi
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { loadConfig, getLibraryPath } from "../lib/config.js";
-import { isObsidianInstalled, openVault } from "../lib/obsidian.js";
+import { isObsidianInstalled, isObsidianCliAvailable } from "../lib/obsidian.js";
 
 interface CommandInfo {
   name: string;
@@ -1018,13 +1018,32 @@ function installObsidian(): void {
     process.exit(1);
   }
 
-  openVault(libraryPath);
-
-  console.log(`Opened snippet library as Obsidian vault: ${libraryPath}`);
+  console.log("Obsidian Setup Guide");
+  console.log("====================");
   console.log();
-  console.log("Recommended Obsidian settings:");
-  console.log('  - Enable Settings → Files & Links → Use [[Wikilinks]]');
-  console.log('  - Set Settings → Files & Links → Default location for new notes → "In the folder specified below"');
+  console.log(`Snippet library: ${libraryPath}`);
+  console.log();
+  console.log("Step 1: Open your snippet library as a vault");
+  console.log("  1. Open Obsidian");
+  console.log("  2. Click \"Open another vault\" (vault icon in bottom-left)");
+  console.log("  3. Click \"Open folder as vault\"");
+  console.log(`  4. Select: ${libraryPath}`);
+  console.log();
+
+  if (isObsidianCliAvailable()) {
+    console.log("Step 2: Enable the CLI for this vault");
+    console.log("  Settings → General → Command line interface → Enable");
+    console.log();
+    console.log("  Then you can use commands like:");
+    console.log("    obsidian search query=<term>");
+    console.log("    obsidian tags counts");
+    console.log("    obsidian unresolved");
+    console.log();
+  }
+
+  console.log(`${isObsidianCliAvailable() ? "Step 3" : "Step 2"}: Recommended settings`);
+  console.log('  - Settings → Files & Links → Use [[Wikilinks]] → Enable');
+  console.log('  - Settings → Files & Links → Default location for new notes → "In the folder specified below"');
   console.log('  - Set the folder to your default snippet type (e.g. "snippets")');
   console.log();
   console.log("Recommended community plugins:");
