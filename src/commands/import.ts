@@ -11,7 +11,8 @@ import {
 import { uniqueSlug } from "../lib/slug.js";
 import { EXIT_CODES } from "../types/index.js";
 import { updateAndEmbed } from "../lib/qmd.js";
-import { enrichSnippet } from "../lib/llm.js";
+import { enrichSnippet, setProviderOverride } from "../lib/llm.js";
+import type { LlmProviderName } from "../types/index.js";
 
 // Map file extensions to language names
 const EXT_TO_LANG: Record<string, string> = {
@@ -163,7 +164,11 @@ export const importCommand = new Command("import")
   .option("-t, --type <type>", "Target snippet type (directory)")
   .option("--tags <tags>", "Comma-separated tags to add")
   .option("--no-enrich", "Skip LLM enrichment")
+  .option("--provider <provider>", "LLM provider override (ollama, gemini, claude, openai, auto)")
   .action(async (sources: string[], opts) => {
+    if (opts.provider) {
+      setProviderOverride(opts.provider as LlmProviderName);
+    }
     const config = loadConfig();
     const libPath = getLibraryPath(config);
 

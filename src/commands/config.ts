@@ -83,7 +83,9 @@ export const configTypesAddCommand = new Command("config:types:add")
     console.log(`Added type "${name}" and created ${typeDir}/`);
   });
 
-const VALID_PROVIDERS = ["ollama", "gemini", "claude", "openai", "auto"];
+const VALID_PROVIDERS = [
+  "ollama", "gemini", "gemini-cli", "claude", "claude-cli", "openai", "openai-cli", "auto",
+];
 
 // Show current LLM configuration
 export const configLlmCommand = new Command("config:llm")
@@ -95,10 +97,13 @@ export const configLlmCommand = new Command("config:llm")
     console.log(`Fallback:  ${config.llm.fallbackProvider || "(none)"}`);
     console.log(`Available: ${available.join(", ")}`);
     console.log();
-    console.log(`Ollama:    model=${config.llm.ollamaModel}  host=${config.llm.ollamaHost}`);
-    console.log(`Gemini:    model=${config.llm.geminiModel}  key=${config.llm.geminiApiKey ? "***" : "(not set)"}`);
-    console.log(`Claude:    api-model=${config.llm.anthropicModel}  cli-model=${config.llm.claudeCliModel}  key=${config.llm.anthropicApiKey ? "***" : "(not set)"}`);
-    console.log(`OpenAI:    model=${config.llm.openaiModel}  key=${config.llm.openaiApiKey ? "***" : "(not set)"}`);
+    console.log(`Ollama:      model=${config.llm.ollamaModel}  host=${config.llm.ollamaHost}`);
+    console.log(`Gemini API:  model=${config.llm.geminiModel}  key=${config.llm.geminiApiKey ? "***" : "(not set)"}`);
+    console.log(`Gemini CLI:  model=${config.llm.geminiCliModel}`);
+    console.log(`Claude API:  model=${config.llm.anthropicModel}  key=${config.llm.anthropicApiKey ? "***" : "(not set)"}`);
+    console.log(`Claude CLI:  model=${config.llm.claudeCliModel}`);
+    console.log(`OpenAI API:  model=${config.llm.openaiModel}  key=${config.llm.openaiApiKey ? "***" : "(not set)"}`);
+    console.log(`Codex CLI:   model=${config.llm.codexCliModel}`);
   });
 
 // Set primary LLM provider
@@ -164,15 +169,18 @@ export const configLlmKeyCommand = new Command("config:llm:key")
 // Set model for a provider
 export const configLlmModelCommand = new Command("config:llm:model")
   .description("Set the model for an LLM provider")
-  .argument("<provider>", "Provider name (ollama, gemini, claude, openai)")
+  .argument("<provider>", "Provider name (ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli)")
   .argument("<model>", "Model name")
   .action(async (provider: string, model: string) => {
     const config = loadConfig();
-    const modelMap: Record<string, "ollamaModel" | "geminiModel" | "anthropicModel" | "claudeCliModel" | "openaiModel"> = {
+    const modelMap: Record<string, keyof typeof config.llm> = {
       ollama: "ollamaModel",
       gemini: "geminiModel",
+      "gemini-cli": "geminiCliModel",
       claude: "anthropicModel",
+      "claude-cli": "claudeCliModel",
       openai: "openaiModel",
+      "openai-cli": "codexCliModel",
     };
 
     const configKey = modelMap[provider];
@@ -181,11 +189,7 @@ export const configLlmModelCommand = new Command("config:llm:model")
       process.exit(EXIT_CODES.CONFIG_ERROR);
     }
 
-    config.llm[configKey] = model;
-    // If setting claude model, also update CLI model
-    if (provider === "claude") {
-      config.llm.claudeCliModel = model;
-    }
+    (config.llm as unknown as Record<string, unknown>)[configKey] = model;
     saveConfig(config);
     console.log(`Model for ${provider} set to: ${model}`);
   });

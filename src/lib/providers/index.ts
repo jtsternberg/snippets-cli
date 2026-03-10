@@ -3,22 +3,48 @@ import type { LlmProviderName } from "../../types/index.js";
 import type { LlmProvider } from "./types.js";
 import { OllamaProvider } from "./ollama.js";
 import { GeminiProvider } from "./gemini.js";
+import { GeminiCliProvider } from "./gemini-cli.js";
 import { ClaudeProvider } from "./claude.js";
+import { ClaudeCliProvider } from "./claude-cli.js";
 import { OpenAIProvider } from "./openai.js";
+import { OpenAICliProvider } from "./openai-cli.js";
 
 export type { LlmProvider } from "./types.js";
 
 const providers: Record<string, LlmProvider> = {
   ollama: new OllamaProvider(),
   gemini: new GeminiProvider(),
+  "gemini-cli": new GeminiCliProvider(),
   claude: new ClaudeProvider(),
+  "claude-cli": new ClaudeCliProvider(),
   openai: new OpenAIProvider(),
+  "openai-cli": new OpenAICliProvider(),
 };
 
-// Auto mode tries providers in this order
-const AUTO_ORDER: LlmProviderName[] = ["gemini", "ollama", "claude", "openai"];
+// Auto mode tries CLI providers first (no key needed), then API providers
+const AUTO_ORDER: LlmProviderName[] = [
+  "gemini-cli", "claude-cli", "openai-cli",
+  "ollama",
+  "gemini", "claude", "openai",
+];
+
+/** CLI override for --provider flag. Set before calling callLlm/isLlmAvailable. */
+let providerOverride: LlmProviderName | null = null;
+
+export function setProviderOverride(name: LlmProviderName | null): void {
+  providerOverride = name;
+}
 
 function getProviderChain(): LlmProvider[] {
+  // CLI --provider flag takes priority
+  if (providerOverride) {
+    if (providerOverride === "auto") {
+      return AUTO_ORDER.map((n) => providers[n]).filter(Boolean);
+    }
+    const p = providers[providerOverride];
+    return p ? [p] : [];
+  }
+
   const config = loadConfig();
   const chain: LlmProvider[] = [];
 

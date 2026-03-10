@@ -19,11 +19,13 @@ export function getDefaultConfig(): SnipConfig {
       ollamaHost: "http://localhost:11434",
       geminiApiKey: null,
       geminiModel: "gemini-2.5-flash",
+      geminiCliModel: "gemini-2.5-flash",
       anthropicApiKey: null,
       anthropicModel: "claude-3-5-haiku-latest",
       claudeCliModel: "claude-3-5-haiku-latest",
       openaiApiKey: null,
       openaiModel: "gpt-4o-mini",
+      codexCliModel: "o4-mini",
     },
     qmd: {
       collectionName: "snip",

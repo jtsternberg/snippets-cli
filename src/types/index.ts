@@ -20,7 +20,12 @@ export interface Snippet {
   slug: string;
 }
 
-export type LlmProviderName = "ollama" | "gemini" | "claude" | "openai" | "auto";
+export type LlmProviderName =
+  | "ollama"
+  | "gemini" | "gemini-cli"
+  | "claude" | "claude-cli"
+  | "openai" | "openai-cli"
+  | "auto";
 
 export interface LlmConfig {
   provider: LlmProviderName;
@@ -29,11 +34,13 @@ export interface LlmConfig {
   ollamaHost: string;
   geminiApiKey: string | null;
   geminiModel: string;
+  geminiCliModel: string;
   anthropicApiKey: string | null;
   anthropicModel: string;
   claudeCliModel: string;
   openaiApiKey: string | null;
   openaiModel: string;
+  codexCliModel: string;
 }
 
 export interface QmdConfig {

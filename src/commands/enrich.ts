@@ -2,9 +2,9 @@ import { Command } from "commander";
 import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
 
 import { writeSnippetFile } from "../lib/frontmatter.js";
-import { enrichSnippet, isLlmAvailable } from "../lib/llm.js";
+import { enrichSnippet, isLlmAvailable, setProviderOverride } from "../lib/llm.js";
 import { EXIT_CODES } from "../types/index.js";
-import type { Snippet } from "../types/index.js";
+import type { Snippet, LlmProviderName } from "../types/index.js";
 
 export const enrichCommand = new Command("enrich")
   .description("Re-run LLM enrichment on snippets to fill missing metadata")
@@ -13,12 +13,17 @@ export const enrichCommand = new Command("enrich")
   .option("--force", "Overwrite existing metadata fields")
   .option("--type <type>", "Filter by snippet type (with --all)")
   .option("--dry-run", "Show what would be updated without writing")
+  .option("--provider <provider>", "LLM provider override (ollama, gemini, claude, openai, auto)")
   .action(async (name: string | undefined, opts: {
     all?: boolean;
     force?: boolean;
     type?: string;
     dryRun?: boolean;
+    provider?: string;
   }) => {
+    if (opts.provider) {
+      setProviderOverride(opts.provider as LlmProviderName);
+    }
     if (!(await isLlmAvailable())) {
       console.error("No LLM provider available. Configure one with `snip config:llm:provider` or start Ollama.");
       process.exit(EXIT_CODES.EXTERNAL_TOOL_ERROR);

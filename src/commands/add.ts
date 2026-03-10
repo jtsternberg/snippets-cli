@@ -13,7 +13,8 @@ import { readClipboard } from "../lib/clipboard.js";
 import { EXIT_CODES } from "../types/index.js";
 import { updateAndEmbed } from "../lib/qmd.js";
 import { fmt } from "../lib/format.js";
-import { detectLanguage, suggestTags, generateTitle, enrichSnippet } from "../lib/llm.js";
+import { detectLanguage, suggestTags, generateTitle, enrichSnippet, setProviderOverride } from "../lib/llm.js";
+import type { LlmProviderName } from "../types/index.js";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { writeFileSync, readFileSync, unlinkSync } from "node:fs";
@@ -26,7 +27,11 @@ export const addCommand = new Command("add")
   .option("--title <title>", "Snippet title")
   .option("--from-clipboard", "Create snippet from clipboard content")
   .option("--content <content>", "Snippet content (non-interactive)")
+  .option("--provider <provider>", "LLM provider override (ollama, gemini, claude, openai, auto)")
   .action(async (opts) => {
+    if (opts.provider) {
+      setProviderOverride(opts.provider as LlmProviderName);
+    }
     const config = loadConfig();
     const libPath = getLibraryPath(config);
 
