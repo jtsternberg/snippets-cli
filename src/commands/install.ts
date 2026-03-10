@@ -95,7 +95,7 @@ ${commandList}
 ${caseBranches}
         install)
           local -a integrations
-          integrations=('completions:Install shell completions' 'alfred:Install Alfred workflow' 'obsidian:Set up Obsidian vault')
+          integrations=('completions:Install shell completions' 'alfred:Install Alfred workflow' 'obsidian:Set up Obsidian vault' 'claude-code:Install Claude Code plugin')
           _describe 'integration' integrations
           ;;
       esac
@@ -146,7 +146,7 @@ _snip_completions() {
       return 0
       ;;
     install)
-      COMPREPLY=( $(compgen -W "completions alfred obsidian" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "completions alfred obsidian claude-code" -- "\${cur}") )
       return 0
       ;;
 ${optionCases}
@@ -226,6 +226,7 @@ function generateFishCompletions(commands: CommandInfo[]): string {
     "complete -c snip -n '__fish_seen_subcommand_from install' -a completions -d 'Install shell completions'",
     "complete -c snip -n '__fish_seen_subcommand_from install' -a alfred -d 'Install Alfred workflow'",
     "complete -c snip -n '__fish_seen_subcommand_from install' -a obsidian -d 'Set up Obsidian vault'",
+    "complete -c snip -n '__fish_seen_subcommand_from install' -a claude-code -d 'Install Claude Code plugin'",
   );
 
   lines.push("");
@@ -1127,12 +1128,78 @@ function installObsidian(): void {
   }
 }
 
+function isClaudeCodeAvailable(): boolean {
+  try {
+    execSync("which claude", { encoding: "utf-8", stdio: ["pipe", "pipe", "pipe"] });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function installClaudeCode(): void {
+  if (!isClaudeCodeAvailable()) {
+    console.error("Claude Code CLI not found on PATH.");
+    console.error("Install it from: https://claude.ai/download");
+    console.error();
+    console.error("Or install the plugin manually inside Claude Code:");
+    console.error("  /plugin marketplace add jtsternberg/snippets-cli");
+    console.error("  /plugin install snippets-cli@jtsternberg/snippets-cli");
+    process.exit(1);
+  }
+
+  console.log(fmt.bold("Installing Claude Code plugin...\n"));
+
+  // Add marketplace
+  console.log("Adding marketplace...");
+  try {
+    execSync("claude plugin marketplace add jtsternberg/snippets-cli", {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    console.log(status.ok("Marketplace added"));
+  } catch (err) {
+    const msg = err instanceof Error ? (err as { stderr?: string }).stderr || err.message : String(err);
+    if (msg.includes("already")) {
+      console.log(status.ok("Marketplace already registered"));
+    } else {
+      console.error(status.warn(`Failed to add marketplace: ${msg}`));
+      process.exit(1);
+    }
+  }
+
+  // Install plugin
+  console.log("Installing plugin...");
+  try {
+    execSync("claude plugin install snippets-cli@jtsternberg/snippets-cli", {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    console.log(status.ok("Plugin installed"));
+  } catch (err) {
+    const msg = err instanceof Error ? (err as { stderr?: string }).stderr || err.message : String(err);
+    if (msg.includes("already")) {
+      console.log(status.ok("Plugin already installed"));
+    } else {
+      console.error(status.warn(`Failed to install plugin: ${msg}`));
+      process.exit(1);
+    }
+  }
+
+  console.log(fmt.bold("\nDone!"));
+  console.log("Restart Claude Code to activate the plugin.\n");
+  console.log("Features:");
+  console.log(status.info("Skills: auto-invoked for snippet management conversations"));
+  console.log(status.info("Commands: /snippets-cli:add, /snippets-cli:find, /snippets-cli:show"));
+  console.log(status.info("Agent: snippet-specialist for complex workflows"));
+}
+
 export function createInstallCommand(program: Command): Command {
   return new Command("install")
     .description("Install integrations and extensions")
     .argument(
       "<integration>",
-      "Integration to install (completions, alfred, obsidian)",
+      "Integration to install (completions, alfred, obsidian, claude-code)",
     )
     .argument("[shell]", "Shell type for completions (bash, zsh, fish)")
     .action(async (integration: string, shell?: string) => {
@@ -1155,9 +1222,13 @@ export function createInstallCommand(program: Command): Command {
           installObsidian();
           break;
 
+        case "claude-code":
+          installClaudeCode();
+          break;
+
         default:
           console.error(
-            `Unknown integration: ${integration}. Available: completions, alfred, obsidian`,
+            `Unknown integration: ${integration}. Available: completions, alfred, obsidian, claude-code`,
           );
           process.exit(1);
       }
