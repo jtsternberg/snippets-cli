@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Claude Code plugin with skills, slash commands, and snippet-specialist agent
+- `snip install claude-code` to install/update the Claude Code plugin from the CLI
+- Plugin marketplace manifest (`.claude-plugin/marketplace.json`)
+
 ## [0.1.0] - 2026-03-10
 
 ### Added
