@@ -48,6 +48,40 @@ function runWithOutput(cmd: string, args: string[], cwd: string): Promise<void> 
   });
 }
 
+/**
+ * Recursively find keys present in `defaults` but missing from `saved`.
+ * Returns dot-notation paths like "llm.newSetting".
+ */
+export function findMissingKeys(
+  saved: Record<string, unknown>,
+  defaults: Record<string, unknown>,
+  prefix = "",
+): string[] {
+  const missing: string[] = [];
+  for (const key of Object.keys(defaults)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (!(key in saved)) {
+      missing.push(path);
+    } else if (
+      typeof defaults[key] === "object" &&
+      defaults[key] !== null &&
+      !Array.isArray(defaults[key]) &&
+      typeof saved[key] === "object" &&
+      saved[key] !== null &&
+      !Array.isArray(saved[key])
+    ) {
+      missing.push(
+        ...findMissingKeys(
+          saved[key] as Record<string, unknown>,
+          defaults[key] as Record<string, unknown>,
+          path,
+        ),
+      );
+    }
+  }
+  return missing;
+}
+
 export function createUpgradeCommand(program: Command): Command {
   return new Command("upgrade")
     .description("Update snip CLI and re-install integrations")
@@ -188,7 +222,7 @@ export function createUpgradeCommand(program: Command): Command {
             readFileSync(getConfigPath(), "utf-8"),
           ) as Record<string, unknown>;
           const defaults = getDefaultConfig();
-          const newKeys = Object.keys(defaults).filter((k) => !(k in raw));
+          const newKeys = findMissingKeys(raw, defaults as unknown as Record<string, unknown>);
           if (newKeys.length > 0) {
             console.log(`\nNew config keys (auto-applied from defaults): ${newKeys.join(", ")}`);
           }
