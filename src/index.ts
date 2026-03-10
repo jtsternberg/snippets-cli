@@ -7,7 +7,15 @@ import { editCommand } from "./commands/edit.js";
 import { rmCommand } from "./commands/rm.js";
 import { listCommand } from "./commands/list.js";
 import { tagsCommand } from "./commands/tags.js";
-import { configCommand, configTypesAddCommand } from "./commands/config.js";
+import {
+  configCommand,
+  configTypesAddCommand,
+  configLlmCommand,
+  configLlmProviderCommand,
+  configLlmFallbackCommand,
+  configLlmKeyCommand,
+  configLlmModelCommand,
+} from "./commands/config.js";
 import { renameCommand } from "./commands/rename.js";
 import { searchCommand } from "./commands/search.js";
 import { findCommand } from "./commands/find.js";
@@ -37,6 +45,11 @@ program.addCommand(listCommand);
 program.addCommand(tagsCommand);
 program.addCommand(configCommand);
 program.addCommand(configTypesAddCommand);
+program.addCommand(configLlmCommand);
+program.addCommand(configLlmProviderCommand);
+program.addCommand(configLlmFallbackCommand);
+program.addCommand(configLlmKeyCommand);
+program.addCommand(configLlmModelCommand);
 program.addCommand(renameCommand);
 program.addCommand(searchCommand);
 program.addCommand(findCommand);
