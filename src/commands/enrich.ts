@@ -1,8 +1,11 @@
 import { Command } from "commander";
+import { renameSync } from "node:fs";
+import { resolve } from "node:path";
 import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
 
 import { writeSnippetFile } from "../lib/frontmatter.js";
 import { enrichSnippet, isLlmAvailable, setProviderOverride, setDebugMode } from "../lib/llm.js";
+import { loadConfig, getLibraryPath } from "../lib/config.js";
 import { EXIT_CODES } from "../types/index.js";
 import type { Snippet, SnippetFrontmatter, LlmProviderName } from "../types/index.js";
 import { fmt } from "../lib/format.js";
@@ -62,11 +65,14 @@ async function enrichSingle(
   }
 
   const spinner = ora(`Enriching ${result.snippet.slug}…`).start();
-  const updates = await applyEnrichment(result.snippet, opts);
+  const enrichResult = await applyEnrichment(result.snippet, opts);
   spinner.stop();
-  if (updates) {
+  if (enrichResult) {
     console.log(`${fmt.green("Enriched:")} ${result.snippet.slug}`);
-    printUpdates(updates);
+    printUpdates(enrichResult.updates);
+    if (enrichResult.movedTo) {
+      console.log(`  ${fmt.dim("Moved to:")} ${enrichResult.movedTo}`);
+    }
   } else {
     console.log(`No updates needed for: ${result.snippet.slug}`);
   }
@@ -90,22 +96,30 @@ async function enrichAll(
 
   for (const snippet of snippets) {
     const spinner = ora(`Enriching ${snippet.slug}…`).start();
-    const updates = await applyEnrichment(snippet, opts);
+    const enrichResult = await applyEnrichment(snippet, opts);
     spinner.stop();
-    if (updates) {
+    if (enrichResult) {
       enriched++;
       console.log(`  ${fmt.green("Updated:")} ${snippet.slug}`);
-      printUpdates(updates, "    ");
+      printUpdates(enrichResult.updates, "    ");
+      if (enrichResult.movedTo) {
+        console.log(`    ${fmt.dim("Moved to:")} ${enrichResult.movedTo}`);
+      }
     }
   }
 
   console.log(`\nDone. ${enriched}/${snippets.length} snippet(s) updated.`);
 }
 
+interface EnrichResult {
+  updates: Partial<SnippetFrontmatter>;
+  movedTo?: string;
+}
+
 async function applyEnrichment(
   snippet: Snippet,
   opts: { force?: boolean; dryRun?: boolean },
-): Promise<Partial<SnippetFrontmatter> | null> {
+): Promise<EnrichResult | null> {
   // If --force, blank out fields so enrichSnippet will regenerate them
   const frontmatter = opts.force
     ? {
@@ -123,12 +137,45 @@ async function applyEnrichment(
 
   if (opts.dryRun) {
     console.log(`  Would update ${snippet.slug}:`, JSON.stringify(updates));
-    return updates;
+    return { updates };
   }
 
   const updatedFm = { ...snippet.frontmatter, ...updates };
-  writeSnippetFile(snippet.filePath, updatedFm, snippet.content);
-  return updates;
+
+  // Update code fence language if language changed
+  let content = snippet.content;
+  if (updates.language) {
+    const oldLang = snippet.frontmatter.language || "";
+    const newLang = updates.language;
+    if (oldLang !== newLang) {
+      // Replace existing fence language or add to bare fences
+      content = content.replace(/```\w*/g, (match) => {
+        if (match === "```" || match === `\`\`\`${oldLang}`) {
+          return `\`\`\`${newLang}`;
+        }
+        return match;
+      });
+    }
+  }
+
+  // Move file if language is "prompt" and not already in prompts/
+  let filePath = snippet.filePath;
+  const config = loadConfig();
+  if (
+    updatedFm.language === "prompt" &&
+    updatedFm.type !== "prompts" &&
+    config.types.includes("prompts")
+  ) {
+    updatedFm.type = "prompts";
+    const libPath = getLibraryPath();
+    const newPath = resolve(libPath, "prompts", `${snippet.slug}.md`);
+    writeSnippetFile(filePath, updatedFm, content);
+    renameSync(filePath, newPath);
+    return { updates, movedTo: newPath };
+  }
+
+  writeSnippetFile(filePath, updatedFm, content);
+  return { updates };
 }
 
 function printUpdates(updates: Partial<SnippetFrontmatter>, indent = "  "): void {
