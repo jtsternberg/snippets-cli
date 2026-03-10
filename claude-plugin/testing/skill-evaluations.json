@@ -1,0 +1,104 @@
+[
+  {
+    "id": "eval-01",
+    "skills": ["using-snippets-cli"],
+    "query": "Save this code to my snippets: function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }",
+    "expected_behavior": [
+      "Uses snip add with --content flag to create the snippet",
+      "Detects JavaScript as the language",
+      "Assigns relevant tags like js, util, debounce",
+      "Confirms snippet was created successfully"
+    ]
+  },
+  {
+    "id": "eval-02",
+    "skills": ["using-snippets-cli"],
+    "query": "Add a snippet from my clipboard",
+    "expected_behavior": [
+      "Runs snip add --from-clipboard",
+      "Reports the created snippet name and metadata",
+      "LLM enrichment adds appropriate tags and title"
+    ]
+  },
+  {
+    "id": "eval-03",
+    "skills": ["using-snippets-cli"],
+    "query": "Find all my Python snippets about error handling",
+    "expected_behavior": [
+      "Uses snip find with --lang python or snip search for semantic matching",
+      "Presents results in a readable format with names, titles, and tags",
+      "Offers to show or copy a specific result"
+    ]
+  },
+  {
+    "id": "eval-04",
+    "skills": ["using-snippets-cli"],
+    "query": "Show me the snippet called fetch-with-retry",
+    "expected_behavior": [
+      "Runs snip show fetch-with-retry",
+      "Displays the snippet content",
+      "If not found, searches for similar names and suggests alternatives"
+    ]
+  },
+  {
+    "id": "eval-05",
+    "skills": ["using-snippets-cli"],
+    "query": "Search for snippets about Docker compose configurations",
+    "expected_behavior": [
+      "Uses snip search for semantic search (not just text match)",
+      "Returns related snippets even if they don't contain exact words",
+      "Presents results with relevance scores"
+    ]
+  },
+  {
+    "id": "eval-06",
+    "skills": ["using-snippets-cli"],
+    "query": "Run my code-review prompt template with language=TypeScript and focus=error handling",
+    "expected_behavior": [
+      "Runs snip run code-review --var language=TypeScript --var focus='error handling'",
+      "Fills template variables and copies result to clipboard",
+      "Reports the filled template content"
+    ]
+  },
+  {
+    "id": "eval-07",
+    "skills": ["using-snippets-cli"],
+    "query": "Import all shell scripts from ./scripts/ into my snippet library",
+    "expected_behavior": [
+      "Runs snip import with glob pattern for shell files",
+      "Adds appropriate tags like shell or bash",
+      "Reports how many snippets were imported"
+    ]
+  },
+  {
+    "id": "eval-08",
+    "skills": ["using-snippets-cli"],
+    "query": "Check if my snippet setup is healthy",
+    "expected_behavior": [
+      "Runs snip doctor",
+      "Reports health check results",
+      "Suggests fixes for any issues found"
+    ]
+  },
+  {
+    "id": "eval-09",
+    "skills": ["troubleshooting-snippets"],
+    "query": "snip search isn't returning any results even though I have snippets",
+    "expected_behavior": [
+      "Runs snip doctor to check qmd installation and index status",
+      "Checks snip config for library path",
+      "Verifies snippets exist with snip list",
+      "Suggests re-indexing if qmd is installed but index is stale"
+    ]
+  },
+  {
+    "id": "eval-10",
+    "skills": ["using-snippets-cli"],
+    "query": "What tags do I have and which ones are most used?",
+    "expected_behavior": [
+      "Runs snip tags or snip tags --json",
+      "Presents tags sorted by frequency",
+      "Shows count for each tag"
+    ]
+  }
+]

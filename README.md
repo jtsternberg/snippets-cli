@@ -32,7 +32,6 @@ npm install
 npm run build
 npm link
 ```
-
 ## Quick Start
 
 ```bash
@@ -169,6 +168,39 @@ brew install ollama
 ollama pull qwen2.5-coder:7b
 ```
 
+## Claude Code Plugin
+
+This repository includes a [Claude Code plugin](claude-plugin/.claude-plugin/README.md) for AI-assisted snippet management. Add, search, and organize snippets using natural language.
+
+### Quick Example
+
+```
+You: "Save this function to my snippets with tags js and util"
+You: "Find all my Python snippets about error handling"
+You: "Run my code-review prompt template with language=TypeScript"
+```
+
+### Installation
+
+In Claude Code:
+```
+/plugin marketplace add jtsternberg/snippets-cli
+/plugin install snippets-cli
+```
+
+Or point to your existing copy of the snippets-cli repository:
+```
+/plugin marketplace add ./snippets-cli
+/plugin install snippets-cli
+```
+
+### Features
+
+- **Skills**: Auto-invoked when discussing snippets, code fragments, or prompt templates
+- **Commands**: `/snippets-cli:add`, `/snippets-cli:find`, `/snippets-cli:show`
+- **Agent**: Snippet specialist for complex multi-step workflows
+
+See [claude-plugin/.claude-plugin/README.md](claude-plugin/.claude-plugin/README.md) for full documentation.
 ## Development
 
 ```bash
