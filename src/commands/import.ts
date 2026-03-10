@@ -12,6 +12,7 @@ import { uniqueSlug } from "../lib/slug.js";
 import { EXIT_CODES } from "../types/index.js";
 import { updateAndEmbed } from "../lib/qmd.js";
 import { enrichSnippet } from "../lib/llm.js";
+import { requireGh, parseGistId, fetchGist } from "../lib/gist.js";
 
 // Map file extensions to language names
 const EXT_TO_LANG: Record<string, string> = {
@@ -158,12 +159,22 @@ async function importSingleFile(
 }
 
 export const importCommand = new Command("import")
-  .description("Import snippets from files, globs, or URLs")
-  .argument("<sources...>", "Files, glob patterns, or URLs to import")
+  .description("Import snippets from files, globs, URLs, or GitHub Gists")
+  .argument("[sources...]", "Files, glob patterns, or URLs to import")
   .option("-t, --type <type>", "Target snippet type (directory)")
   .option("--tags <tags>", "Comma-separated tags to add")
   .option("--no-enrich", "Skip LLM enrichment")
+  .option("--from-gist <url-or-id>", "Import all files from a GitHub Gist")
   .action(async (sources: string[], opts) => {
+    if (opts.fromGist) {
+      return importFromGist(opts);
+    }
+
+    if (!sources || sources.length === 0) {
+      console.error("No sources specified. Provide files, URLs, or use --from-gist.");
+      process.exit(EXIT_CODES.GENERAL_ERROR);
+    }
+
     const config = loadConfig();
     const libPath = getLibraryPath(config);
 
@@ -246,3 +257,117 @@ export const importCommand = new Command("import")
       await updateAndEmbed();
     }
   });
+
+// Map gist language names (from GitHub API) to our language identifiers
+const GIST_LANG_MAP: Record<string, string> = {
+  javascript: "javascript", typescript: "typescript", python: "python",
+  ruby: "ruby", shell: "bash", bash: "bash", zsh: "zsh", go: "go",
+  rust: "rust", java: "java", kotlin: "kotlin", swift: "swift",
+  c: "c", "c++": "cpp", "c#": "csharp", php: "php", perl: "perl",
+  lua: "lua", r: "r", sql: "sql", html: "html", css: "css",
+  scss: "scss", json: "json", yaml: "yaml", toml: "toml", xml: "xml",
+  markdown: "markdown",
+};
+
+async function importFromGist(opts: {
+  fromGist: string;
+  type?: string;
+  tags?: string;
+  enrich: boolean;
+}): Promise<void> {
+  requireGh();
+
+  const config = loadConfig();
+  const libPath = getLibraryPath(config);
+
+  if (!existsSync(libPath)) {
+    console.error("Snippet library not initialized. Run `snip init` first.");
+    process.exit(EXIT_CODES.CONFIG_ERROR);
+  }
+
+  const gistId = parseGistId(opts.fromGist);
+  const gist = fetchGist(gistId);
+  // Use the gist's last-updated date as the sync baseline
+  const gistUpdated = gist.updatedAt
+    ? gist.updatedAt.slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
+
+  if (gist.files.length === 0) {
+    console.error("Gist has no files.");
+    process.exit(EXIT_CODES.NOT_FOUND);
+  }
+
+  const tags = opts.tags
+    ? opts.tags.split(",").map((t: string) => t.trim())
+    : [];
+  // Add "gist" tag so imports are discoverable
+  if (!tags.includes("gist")) tags.push("gist");
+
+  const type = opts.type || config.defaultType;
+  const typeDir = resolve(libPath, type);
+  mkdirSync(typeDir, { recursive: true });
+
+  let imported = 0;
+
+  for (const file of gist.files) {
+    const ext = extname(file.filename).toLowerCase();
+    const title = basename(file.filename, ext);
+    const language = GIST_LANG_MAP[file.language] || EXT_TO_LANG[ext] || "";
+
+    const slug = uniqueSlug(title, typeDir);
+    const outPath = resolve(typeDir, `${slug}.md`);
+
+    // If it's already a markdown snippet file, adopt it
+    if (ext === ".md" && file.content.startsWith("---")) {
+      const parsed = parseSnippetString(file.content, "temp.md");
+      const fm = createNewFrontmatter({
+        ...parsed.frontmatter,
+        type,
+        gist_id: gistId,
+        gist_updated: gistUpdated,
+        source: `https://gist.github.com/${gistId}`,
+      });
+      fm.tags = [...new Set([...fm.tags, ...tags])];
+      writeSnippetFile(outPath, fm, parsed.content);
+    } else {
+      // Wrap raw content in a code fence
+      const fencedContent = language
+        ? `\n\`\`\`${language}\n${file.content}\n\`\`\`\n`
+        : `\n\`\`\`\n${file.content}\n\`\`\`\n`;
+
+      const fm = createNewFrontmatter({
+        title,
+        language,
+        tags,
+        type,
+        gist_id: gistId,
+        gist_updated: gistUpdated,
+        source: `https://gist.github.com/${gistId}`,
+      });
+
+      writeSnippetFile(outPath, fm, fencedContent);
+
+      // LLM enrichment
+      if (opts.enrich !== false) {
+        try {
+          const snippet = parseSnippetString(readFileSync(outPath, "utf-8"), outPath);
+          const enriched = await enrichSnippet(snippet.frontmatter, fencedContent);
+          if (Object.keys(enriched).length > 0) {
+            writeSnippetFile(outPath, { ...snippet.frontmatter, ...enriched }, snippet.content);
+          }
+        } catch {
+          // Enrichment failure is non-fatal
+        }
+      }
+    }
+
+    console.log(`  Imported: ${slug} (from ${file.filename})`);
+    imported++;
+  }
+
+  console.log(`\n${imported} file(s) imported from gist ${gistId}`);
+
+  if (imported > 0) {
+    await updateAndEmbed();
+  }
+}

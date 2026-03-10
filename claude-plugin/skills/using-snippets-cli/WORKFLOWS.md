@@ -112,6 +112,37 @@ snip add --from-clipboard --title "React Query Hook"
 snip link react-query-hook --auto
 ```
 
+## GitHub Gist Sync
+
+Share snippets as GitHub Gists and keep them synchronized.
+
+```bash
+# Publish a snippet as a secret gist
+snip export my-snippet --to-gist
+
+# Publish as a public gist
+snip export my-snippet --to-gist --public
+
+# Re-export updates the existing gist (gist_id tracked in frontmatter)
+snip export my-snippet --to-gist
+
+# Import all files from a gist
+snip import --from-gist https://gist.github.com/user/abc123
+
+# Import by gist ID
+snip import --from-gist abc123 --no-enrich
+
+# Sync all gist-linked snippets
+snip sync
+
+# Preview sync without making changes
+snip sync --dry-run
+
+# Force push local changes or pull remote changes
+snip sync --push
+snip sync --pull
+```
+
 ## Health Check and Maintenance
 
 Keep the library and toolchain in good shape.

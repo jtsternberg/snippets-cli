@@ -15,6 +15,8 @@ const FRONTMATTER_DEFAULTS: SnippetFrontmatter = {
   source: "",
   related: [],
   variables: [],
+  gist_id: "",
+  gist_updated: "",
 };
 
 function today(): string {
@@ -68,6 +70,8 @@ export function serializeSnippet(
   if (frontmatter.source) clean.source = frontmatter.source;
   if (frontmatter.related?.length) clean.related = frontmatter.related;
   if (frontmatter.variables?.length) clean.variables = frontmatter.variables;
+  if (frontmatter.gist_id) clean.gist_id = frontmatter.gist_id;
+  if (frontmatter.gist_updated) clean.gist_updated = frontmatter.gist_updated;
 
   return matter.stringify(content, clean);
 }
