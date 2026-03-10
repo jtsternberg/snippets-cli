@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(snip add:*)",
+      "Bash(snip show:*)",
+      "Bash(snip copy:*)",
+      "Bash(snip edit:*)",
+      "Bash(snip rm:*)",
+      "Bash(snip list:*)",
+      "Bash(snip tags:*)",
+      "Bash(snip search:*)",
+      "Bash(snip find:*)",
+      "Bash(snip rename:*)",
+      "Bash(snip run:*)",
+      "Bash(snip link:*)",
+      "Bash(snip import:*)",
+      "Bash(snip export:*)",
+      "Bash(snip config:*)",
+      "Bash(snip install:*)",
+      "Bash(snip upgrade:*)",
+      "Bash(snip doctor)",
+      "Bash(snip init:*)"
+    ]
+  }
+}
