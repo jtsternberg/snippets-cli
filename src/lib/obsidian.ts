@@ -49,6 +49,29 @@ export function isObsidianCliAvailable(): boolean {
   }
 }
 
+/** Check if a path is registered as an Obsidian vault. Requires CLI. */
+export function getVaultName(libraryPath: string): string | null {
+  if (!isObsidianCliAvailable()) return null;
+
+  try {
+    const output = execSync("obsidian vaults verbose", {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    const absPath = resolve(libraryPath);
+    for (const line of output.split("\n")) {
+      // Format: "vault-name\t/path/to/vault"
+      const parts = line.split("\t");
+      if (parts.length >= 2 && resolve(parts[1].trim()) === absPath) {
+        return parts[0].trim();
+      }
+    }
+  } catch {
+    // CLI not running or errored
+  }
+  return null;
+}
+
 export function getBacklinks(filePath: string, libraryPath: string): string[] {
   const slug = basename(filePath, ".md");
   const pattern = `[[${slug}]]`;

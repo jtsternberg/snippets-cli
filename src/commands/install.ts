@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFi
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { loadConfig, getLibraryPath } from "../lib/config.js";
-import { isObsidianInstalled, isObsidianCliAvailable } from "../lib/obsidian.js";
+import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../lib/obsidian.js";
 
 interface CommandInfo {
   name: string;
@@ -1018,30 +1018,36 @@ function installObsidian(): void {
     process.exit(1);
   }
 
+  const hasCli = isObsidianCliAvailable();
+  const vaultName = hasCli ? getVaultName(libraryPath) : null;
+  let step = 1;
+
   console.log("Obsidian Setup Guide");
   console.log("====================");
   console.log();
   console.log(`Snippet library: ${libraryPath}`);
   console.log();
-  console.log("Step 1: Open your snippet library as a vault");
-  console.log("  1. Open Obsidian");
-  console.log("  2. Click \"Open another vault\" (vault icon in bottom-left)");
-  console.log("  3. Click \"Open folder as vault\"");
-  console.log(`  4. Select: ${libraryPath}`);
-  console.log();
 
-  if (isObsidianCliAvailable()) {
-    console.log("Step 2: Enable the CLI for this vault");
-    console.log("  Settings → General → Command line interface → Enable");
+  if (vaultName) {
+    console.log(`Vault already registered: "${vaultName}"`);
     console.log();
-    console.log("  Then you can use commands like:");
-    console.log("    obsidian search query=<term>");
-    console.log("    obsidian tags counts");
-    console.log("    obsidian unresolved");
+  } else {
+    console.log(`Step ${step++}: Open your snippet library as a vault`);
+    console.log("  1. Open Obsidian");
+    console.log("  2. Click \"Open another vault\" (vault icon in bottom-left)");
+    console.log("  3. Click \"Open folder as vault\"");
+    console.log(`  4. Select: ${libraryPath}`);
     console.log();
   }
 
-  console.log(`${isObsidianCliAvailable() ? "Step 3" : "Step 2"}: Recommended settings`);
+  if (!hasCli) {
+    console.log(`Step ${step++}: Enable the Obsidian CLI`);
+    console.log("  Settings → General → Command line interface → Enable");
+    console.log("  Then follow on-screen instructions to add it to your PATH.");
+    console.log();
+  }
+
+  console.log(`Step ${step++}: Recommended settings`);
   console.log('  - Settings → Files & Links → Use [[Wikilinks]] → Enable');
   console.log('  - Settings → Files & Links → Default location for new notes → "In the folder specified below"');
   console.log('  - Set the folder to your default snippet type (e.g. "snippets")');
@@ -1050,6 +1056,17 @@ function installObsidian(): void {
   console.log("  - Dataview — query snippets by frontmatter fields");
   console.log("  - Tag Wrangler — manage and rename tags");
   console.log("  - Templater — create snippet templates");
+
+  if (hasCli) {
+    const vaultFlag = vaultName ? ` vault="${vaultName}"` : "";
+    console.log();
+    console.log("Obsidian CLI commands for your snippets:");
+    console.log(`  obsidian search query=<term>${vaultFlag}`);
+    console.log(`  obsidian tags counts${vaultFlag}`);
+    console.log(`  obsidian backlinks file=<name>${vaultFlag}`);
+    console.log(`  obsidian orphans${vaultFlag}`);
+    console.log(`  obsidian unresolved${vaultFlag}`);
+  }
 }
 
 export function createInstallCommand(program: Command): Command {
