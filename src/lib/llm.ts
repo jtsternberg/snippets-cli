@@ -20,6 +20,7 @@ export async function detectLanguage(code: string): Promise<string | null> {
   const prompt = `Identify the programming language of this code. Respond with ONLY the language name in lowercase (e.g., "python", "bash", "javascript"). If it's a natural language prompt or instruction, respond with "prompt". If unsure, respond with "unknown".
 
 Code:
+---
 ${code.slice(0, 500)}`;
 
   const result = await callLlm(prompt);
@@ -48,6 +49,7 @@ export async function suggestTags(
 Respond with ONLY a comma-separated list of tags, nothing else.
 
 Content:
+---
 ${content.slice(0, 1000)}`;
 
   const result = await callLlm(prompt);
@@ -63,6 +65,7 @@ export async function generateTitle(content: string): Promise<string | null> {
   const prompt = `Generate a short, descriptive title (3-7 words) for this code snippet. Respond with ONLY the title, nothing else.
 
 Content:
+---
 ${content.slice(0, 1000)}`;
 
   const result = await callLlm(prompt);
@@ -128,6 +131,7 @@ Respond with ONLY valid JSON, no markdown fences, no explanation. Example respon
 ${JSON.stringify(exampleJson)}
 
 Content:
+---
 ${content.slice(0, 1500)}`;
 
   const result = await callLlm(prompt);

@@ -118,12 +118,6 @@ export const addCommand = new Command("add")
       unlinkSync(tmpFile);
     }
 
-    // Wrap content in code fence if from clipboard and not already fenced
-    if (opts.fromClipboard && !content.includes("```")) {
-      const lang = language || "";
-      content = `\n\`\`\`${lang}\n${content}\n\`\`\`\n`;
-    }
-
     // Build initial frontmatter
     const frontmatter = createNewFrontmatter({
       title,
@@ -140,6 +134,11 @@ export const addCommand = new Command("add")
       if (enriched.title && !opts.title) title = enriched.title;
       if (enriched.language && !language) language = enriched.language;
       if (enriched.tags?.length && !tags.length) tags = enriched.tags;
+    }
+
+    // Wrap content in code fence after enrichment so language is available
+    if (!content.includes("```") && language) {
+      content = `\n\`\`\`${language}\n${content}\n\`\`\`\n`;
     }
 
     // If enrichment detected prompt language, switch type to prompts
