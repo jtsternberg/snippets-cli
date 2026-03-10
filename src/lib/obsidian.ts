@@ -1,5 +1,5 @@
-import { execSync, spawn } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { resolve, basename, join } from "node:path";
 
 function getAllMarkdownFiles(dir: string): string[] {
@@ -18,6 +18,11 @@ function getAllMarkdownFiles(dir: string): string[] {
 }
 
 export function isObsidianInstalled(): boolean {
+  // Check for Obsidian.app on macOS
+  if (process.platform === "darwin") {
+    return existsSync("/Applications/Obsidian.app");
+  }
+  // On Linux, check for the obsidian binary
   try {
     execSync("which obsidian", { stdio: "ignore" });
     return true;
@@ -28,7 +33,7 @@ export function isObsidianInstalled(): boolean {
 
 export function isObsidianRunning(): boolean {
   try {
-    execSync("pgrep -x Obsidian", { stdio: "ignore" });
+    execSync("pgrep -ix Obsidian", { stdio: "ignore" });
     return true;
   } catch {
     return false;
@@ -36,11 +41,14 @@ export function isObsidianRunning(): boolean {
 }
 
 export function openVault(vaultPath: string): void {
-  const child = spawn("obsidian", ["open", vaultPath], {
-    detached: true,
-    stdio: "ignore",
-  });
-  child.unref();
+  const absPath = resolve(vaultPath);
+  const uri = `obsidian://open?path=${encodeURIComponent(absPath)}`;
+
+  if (process.platform === "darwin") {
+    execSync(`open "${uri}"`);
+  } else {
+    execSync(`xdg-open "${uri}"`);
+  }
 }
 
 export function getBacklinks(filePath: string, libraryPath: string): string[] {

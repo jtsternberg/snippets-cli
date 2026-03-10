@@ -1005,7 +1005,7 @@ export async function installShellCompletions(program: Command, shell?: string):
 function installObsidian(): void {
   if (!isObsidianInstalled()) {
     console.error(
-      "Obsidian CLI not found. Install it from https://obsidian.md and ensure the `obsidian` command is in your PATH.",
+      "Obsidian not found. Install it from https://obsidian.md",
     );
     process.exit(1);
   }
