@@ -1092,10 +1092,28 @@ function installObsidian(): void {
 
   // --- Plugins ---
   console.log(fmt.bold("\nRecommended plugins:"));
-  console.log(status.info("Obsidian Git — auto-commit and sync via git"));
-  console.log(status.info("Dataview — query snippets by frontmatter fields"));
-  console.log(status.info("Tag Wrangler — manage and rename tags"));
-  console.log(status.info("Templater — create snippet templates"));
+  const pluginsPath = resolve(libraryPath, ".obsidian", "community-plugins.json");
+  let installedPlugins: string[] = [];
+  if (existsSync(pluginsPath)) {
+    try {
+      installedPlugins = JSON.parse(readFileSync(pluginsPath, "utf-8"));
+    } catch {
+      // ignore parse errors
+    }
+  }
+  const recommended: [string, string][] = [
+    ["obsidian-git", "Obsidian Git — auto-commit and sync via git"],
+    ["dataview", "Dataview — query snippets by frontmatter fields"],
+    ["tag-wrangler", "Tag Wrangler — manage and rename tags"],
+    ["templater-obsidian", "Templater — create snippet templates"],
+  ];
+  for (const [id, label] of recommended) {
+    if (installedPlugins.includes(id)) {
+      console.log(status.ok(label));
+    } else {
+      console.log(status.info(label));
+    }
+  }
 
   // --- CLI commands reference ---
   if (hasCli) {
