@@ -4,7 +4,9 @@ import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.
 import { writeSnippetFile } from "../lib/frontmatter.js";
 import { enrichSnippet, isLlmAvailable, setProviderOverride, setDebugMode } from "../lib/llm.js";
 import { EXIT_CODES } from "../types/index.js";
-import type { Snippet, LlmProviderName } from "../types/index.js";
+import type { Snippet, SnippetFrontmatter, LlmProviderName } from "../types/index.js";
+import { fmt } from "../lib/format.js";
+import ora from "ora";
 
 export const enrichCommand = new Command("enrich")
   .description("Re-run LLM enrichment on snippets to fill missing metadata")
@@ -59,9 +61,12 @@ async function enrichSingle(
     process.exit(EXIT_CODES.NOT_FOUND);
   }
 
-  const updated = await applyEnrichment(result.snippet, opts);
-  if (updated) {
-    console.log(`Enriched: ${result.snippet.slug}`);
+  const spinner = ora(`Enriching ${result.snippet.slug}…`).start();
+  const updates = await applyEnrichment(result.snippet, opts);
+  spinner.stop();
+  if (updates) {
+    console.log(`${fmt.green("Enriched:")} ${result.snippet.slug}`);
+    printUpdates(updates);
   } else {
     console.log(`No updates needed for: ${result.snippet.slug}`);
   }
@@ -84,10 +89,13 @@ async function enrichAll(
   let enriched = 0;
 
   for (const snippet of snippets) {
-    const updated = await applyEnrichment(snippet, opts);
-    if (updated) {
+    const spinner = ora(`Enriching ${snippet.slug}…`).start();
+    const updates = await applyEnrichment(snippet, opts);
+    spinner.stop();
+    if (updates) {
       enriched++;
-      console.log(`  Updated: ${snippet.slug}`);
+      console.log(`  ${fmt.green("Updated:")} ${snippet.slug}`);
+      printUpdates(updates, "    ");
     }
   }
 
@@ -97,7 +105,7 @@ async function enrichAll(
 async function applyEnrichment(
   snippet: Snippet,
   opts: { force?: boolean; dryRun?: boolean },
-): Promise<boolean> {
+): Promise<Partial<SnippetFrontmatter> | null> {
   // If --force, blank out fields so enrichSnippet will regenerate them
   const frontmatter = opts.force
     ? {
@@ -111,14 +119,22 @@ async function applyEnrichment(
     : snippet.frontmatter;
 
   const updates = await enrichSnippet(frontmatter, snippet.body);
-  if (Object.keys(updates).length === 0) return false;
+  if (Object.keys(updates).length === 0) return null;
 
   if (opts.dryRun) {
     console.log(`  Would update ${snippet.slug}:`, JSON.stringify(updates));
-    return true;
+    return updates;
   }
 
   const updatedFm = { ...snippet.frontmatter, ...updates };
   writeSnippetFile(snippet.filePath, updatedFm, snippet.content);
-  return true;
+  return updates;
+}
+
+function printUpdates(updates: Partial<SnippetFrontmatter>, indent = "  "): void {
+  if (updates.title) console.log(`${indent}${fmt.dim("Title:")} ${updates.title}`);
+  if (updates.description) console.log(`${indent}${fmt.dim("Description:")} ${updates.description}`);
+  if (updates.language) console.log(`${indent}${fmt.dim("Language:")} ${updates.language}`);
+  if (updates.tags?.length) console.log(`${indent}${fmt.dim("Tags:")} ${updates.tags.join(", ")}`);
+  if (updates.aliases?.length) console.log(`${indent}${fmt.dim("Aliases:")} ${updates.aliases.join(", ")}`);
 }
