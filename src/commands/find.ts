@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { getAllSnippets } from "../lib/resolve.js";
+import { formatSnippetLine, formatCount, fmt } from "../lib/format.js";
 
 export const findCommand = new Command("find")
   .description("Quick text search across snippets (grep-like)")
@@ -68,13 +69,12 @@ export const findCommand = new Command("find")
     }
 
     for (const s of matches) {
-      const tags = s.frontmatter.tags.length
-        ? ` [${s.frontmatter.tags.join(", ")}]`
-        : "";
-      const lang = s.frontmatter.language
-        ? ` (${s.frontmatter.language})`
-        : "";
-      console.log(`${s.slug}${lang}${tags} — ${s.frontmatter.title}`);
+      console.log(formatSnippetLine(
+        s.slug,
+        s.frontmatter.title,
+        s.frontmatter.language,
+        s.frontmatter.tags,
+      ));
 
       // Show matching line preview
       const lines = s.body.split("\n");
@@ -84,11 +84,11 @@ export const findCommand = new Command("find")
             line.trim().length > 80
               ? line.trim().slice(0, 80) + "..."
               : line.trim();
-          console.log(`  > ${trimmed}`);
+          console.log(`  ${fmt.dim(">")} ${fmt.dim(trimmed)}`);
           break;
         }
       }
     }
 
-    console.log(`\n${matches.length} result(s)`);
+    console.log(`\n${formatCount(matches.length, "result")}`);
   });

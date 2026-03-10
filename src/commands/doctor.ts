@@ -6,45 +6,46 @@ import { configExists, loadConfig, getLibraryPath, getConfigPath } from "../lib/
 import { isQmdInstalled } from "../lib/qmd.js";
 import { getAllSnippets } from "../lib/resolve.js";
 import { detectShell, getCompletionPath } from "./install.js";
+import { fmt, status } from "../lib/format.js";
 
 export async function runDoctorCheck(): Promise<void> {
   let issues = 0;
 
   // 1. Config
-  console.log("Config:");
+  console.log(fmt.bold("Config:"));
   if (configExists()) {
-    console.log(`  OK  Config exists at ${getConfigPath()}`);
+    console.log(status.ok(`Config exists at ${getConfigPath()}`));
   } else {
-    console.log(`  !!  No config found. Run: snip init`);
+    console.log(status.warn("No config found. Run: snip init"));
     issues++;
   }
 
   // 2. Library path
-  console.log("\nLibrary:");
+  console.log(fmt.bold("\nLibrary:"));
   const config = loadConfig();
   const libPath = getLibraryPath(config);
   if (existsSync(libPath)) {
-    console.log(`  OK  Library exists at ${libPath}`);
+    console.log(status.ok(`Library exists at ${libPath}`));
 
     // Check type directories
     for (const type of config.types) {
       const typeDir = `${libPath}/${type}`;
       if (existsSync(typeDir)) {
-        console.log(`  OK  ${type}/ directory exists`);
+        console.log(status.ok(`${type}/ directory exists`));
       } else {
-        console.log(`  !!  ${type}/ directory missing`);
+        console.log(status.warn(`${type}/ directory missing`));
         issues++;
       }
     }
   } else {
-    console.log(`  !!  Library not found at ${libPath}. Run: snip init`);
+    console.log(status.warn(`Library not found at ${libPath}. Run: snip init`));
     issues++;
   }
 
   // 3. Snippets
-  console.log("\nSnippets:");
+  console.log(fmt.bold("\nSnippets:"));
   const snippets = getAllSnippets();
-  console.log(`  OK  ${snippets.length} snippet(s) found`);
+  console.log(status.ok(`${snippets.length} snippet(s) found`));
 
   // Check for broken cross-links
   const allSlugs = new Set(snippets.map((s) => s.slug));
@@ -53,22 +54,22 @@ export async function runDoctorCheck(): Promise<void> {
     for (const rel of s.frontmatter.related) {
       const match = rel.match(/\[\[(.+?)\]\]/);
       if (match && !allSlugs.has(match[1])) {
-        console.log(`  !!  Broken link in ${s.slug}: ${rel}`);
+        console.log(status.warn(`Broken link in ${s.slug}: ${rel}`));
         brokenLinks++;
       }
     }
   }
   if (brokenLinks === 0 && snippets.length > 0) {
-    console.log(`  OK  No broken cross-links`);
+    console.log(status.ok("No broken cross-links"));
   }
   issues += brokenLinks;
 
   // 4. Shell completions
   const shell = detectShell();
   const completionPath = getCompletionPath(shell);
-  console.log("\nCompletions:");
+  console.log(fmt.bold("\nCompletions:"));
   if (completionPath && existsSync(completionPath)) {
-    console.log(`  OK  ${shell} completion file exists at ${completionPath}`);
+    console.log(status.ok(`${shell} completion file exists at ${completionPath}`));
 
     // Check if completions are wired up to actually load
     if (shell === "zsh") {
@@ -78,19 +79,19 @@ export async function runDoctorCheck(): Promise<void> {
         const hasFpath = content.includes(".zsh/completions") && content.includes("fpath");
         const hasCompinit = content.includes("compinit");
         if (hasFpath && hasCompinit) {
-          console.log(`  OK  ~/.zshrc has fpath and compinit configured`);
+          console.log(status.ok("~/.zshrc has fpath and compinit configured"));
         } else {
           if (!hasFpath) {
-            console.log(`  !!  ~/.zshrc missing fpath for completions directory`);
+            console.log(status.warn("~/.zshrc missing fpath for completions directory"));
             issues++;
           }
           if (!hasCompinit) {
-            console.log(`  !!  ~/.zshrc missing compinit`);
+            console.log(status.warn("~/.zshrc missing compinit"));
             issues++;
           }
         }
       } else {
-        console.log(`  !!  No ~/.zshrc found — completions won't load`);
+        console.log(status.warn("No ~/.zshrc found — completions won't load"));
         issues++;
       }
     } else if (shell === "bash") {
@@ -98,37 +99,37 @@ export async function runDoctorCheck(): Promise<void> {
       if (existsSync(bashrc)) {
         const content = readFileSync(bashrc, "utf-8");
         if (content.includes(completionPath) || content.includes("bash-completion")) {
-          console.log(`  OK  ~/.bashrc sources completions`);
+          console.log(status.ok("~/.bashrc sources completions"));
         } else {
-          console.log(`  !!  ~/.bashrc may not source ${completionPath}`);
+          console.log(status.warn(`~/.bashrc may not source ${completionPath}`));
           console.log(`      Add: [ -f ${completionPath} ] && source ${completionPath}`);
           issues++;
         }
       } else {
-        console.log(`  !!  No ~/.bashrc found — completions won't load`);
+        console.log(status.warn("No ~/.bashrc found — completions won't load"));
         issues++;
       }
     } else if (shell === "fish") {
       // Fish auto-loads from ~/.config/fish/completions/
-      console.log(`  OK  fish auto-loads completions from this path`);
+      console.log(status.ok("fish auto-loads completions from this path"));
     }
   } else if (completionPath) {
-    console.log(`  --  ${shell} completions not installed. Run: snip install completions`);
+    console.log(status.info(`${shell} completions not installed. Run: snip install completions`));
   } else {
-    console.log(`  --  Could not determine completion path for shell: ${shell}`);
+    console.log(status.info(`Could not determine completion path for shell: ${shell}`));
   }
 
   // 5. qmd
-  console.log("\nqmd:");
+  console.log(fmt.bold("\nqmd:"));
   const hasQmd = await isQmdInstalled();
   if (hasQmd) {
-    console.log(`  OK  qmd is installed`);
+    console.log(status.ok("qmd is installed"));
   } else {
-    console.log(`  --  qmd not installed (optional). Install: npm i -g @tobilu/qmd`);
+    console.log(status.info("qmd not installed (optional). Install: npm i -g @tobilu/qmd"));
   }
 
   // 6. Ollama
-  console.log("\nOllama:");
+  console.log(fmt.bold("\nOllama:"));
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 2000);
@@ -137,20 +138,20 @@ export async function runDoctorCheck(): Promise<void> {
     });
     clearTimeout(timeout);
     if (resp.ok) {
-      console.log(`  OK  Ollama is running at ${config.llm.ollamaHost}`);
+      console.log(status.ok(`Ollama is running at ${config.llm.ollamaHost}`));
     } else {
-      console.log(`  --  Ollama not responding (optional)`);
+      console.log(status.info("Ollama not responding (optional)"));
     }
   } catch {
-    console.log(`  --  Ollama not running at ${config.llm.ollamaHost} (optional)`);
+    console.log(status.info(`Ollama not running at ${config.llm.ollamaHost} (optional)`));
   }
 
   // Summary
   console.log("");
   if (issues === 0) {
-    console.log("All checks passed!");
+    console.log(fmt.greenBold("All checks passed!"));
   } else {
-    console.log(`${issues} issue(s) found.`);
+    console.log(fmt.yellowBold(`${issues} issue(s) found.`));
   }
 }
 

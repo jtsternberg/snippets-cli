@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { getAllSnippets } from "../lib/resolve.js";
+import { fmt } from "../lib/format.js";
 
 export const tagsCommand = new Command("tags")
   .description("List all tags with counts")
@@ -34,6 +35,6 @@ export const tagsCommand = new Command("tags")
     }
 
     for (const [tag, count] of sorted) {
-      console.log(`${tag} (${count})`);
+      console.log(`${fmt.cyan(tag)} ${fmt.dim(`(${count})`)}`);
     }
   });

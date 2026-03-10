@@ -12,6 +12,7 @@ import { uniqueSlug } from "../lib/slug.js";
 import { readClipboard } from "../lib/clipboard.js";
 import { EXIT_CODES } from "../types/index.js";
 import { updateAndEmbed } from "../lib/qmd.js";
+import { fmt } from "../lib/format.js";
 import { detectLanguage, suggestTags, generateTitle, enrichSnippet } from "../lib/llm.js";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -169,10 +170,10 @@ export const addCommand = new Command("add")
 
     writeSnippetFile(filePath, frontmatter, content);
 
-    console.log(`Created: ${filePath}`);
-    console.log(`  Title: ${title}`);
-    if (language) console.log(`  Language: ${language}`);
-    if (tags.length) console.log(`  Tags: ${tags.join(", ")}`);
+    console.log(`${fmt.green("Created:")} ${filePath}`);
+    console.log(`  ${fmt.dim("Title:")} ${title}`);
+    if (language) console.log(`  ${fmt.dim("Language:")} ${language}`);
+    if (tags.length) console.log(`  ${fmt.dim("Tags:")} ${fmt.cyan(tags.join(", "))}`);
 
     // LLM enrichment: fill in any missing metadata
     let currentPath = filePath;

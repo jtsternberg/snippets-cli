@@ -3,6 +3,7 @@ import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
 import { highlight } from "cli-highlight";
+import { fmt } from "../lib/format.js";
 
 export const showCommand = new Command("show")
   .description("Display a snippet in the terminal")
@@ -40,20 +41,20 @@ export const showCommand = new Command("show")
     }
 
     // Header
-    console.log(`# ${snippet.frontmatter.title}`);
+    console.log(fmt.bold(`# ${snippet.frontmatter.title}`));
     if (snippet.frontmatter.description) {
       console.log(snippet.frontmatter.description);
     }
     if (snippet.frontmatter.tags.length) {
-      console.log(`Tags: ${snippet.frontmatter.tags.join(", ")}`);
+      console.log(`${fmt.dim("Tags:")} ${fmt.cyan(snippet.frontmatter.tags.join(", "))}`);
     }
     if (snippet.frontmatter.aliases?.length) {
-      console.log(`Aliases: ${snippet.frontmatter.aliases.join(", ")}`);
+      console.log(`${fmt.dim("Aliases:")} ${snippet.frontmatter.aliases.join(", ")}`);
     }
     if (snippet.frontmatter.language) {
-      console.log(`Language: ${snippet.frontmatter.language}`);
+      console.log(`${fmt.dim("Language:")} ${snippet.frontmatter.language}`);
     }
-    console.log(`Path: ${snippet.filePath}`);
+    console.log(`${fmt.dim("Path:")} ${fmt.dim(snippet.filePath)}`);
     console.log("");
 
     // Content

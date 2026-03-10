@@ -8,6 +8,7 @@ import { formatAlfredResults, formatAlfredError } from "../lib/alfred.js";
 import { getLibraryPath } from "../lib/config.js";
 import { existsSync } from "node:fs";
 import type { Snippet } from "../types/index.js";
+import { formatSnippetLine } from "../lib/format.js";
 
 export const searchCommand = new Command("search")
   .description("Semantic search across snippets (via qmd)")
@@ -83,19 +84,15 @@ export const searchCommand = new Command("search")
     }
 
     // Interactive mode — let user select, then copy
-    const choices = results.map((s) => {
-      const tags = s.frontmatter.tags.length
-        ? ` [${s.frontmatter.tags.join(", ")}]`
-        : "";
-      const lang = s.frontmatter.language
-        ? ` (${s.frontmatter.language})`
-        : "";
-
-      return {
-        name: `${s.slug}${lang}${tags} — ${s.frontmatter.title}`,
-        value: s.slug,
-      };
-    });
+    const choices = results.map((s) => ({
+      name: formatSnippetLine(
+        s.slug,
+        s.frontmatter.title,
+        s.frontmatter.language,
+        s.frontmatter.tags,
+      ),
+      value: s.slug,
+    }));
 
     const selected = await select({
       message: `${results.length} result(s) — select to copy:`,
