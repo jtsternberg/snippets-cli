@@ -33,6 +33,26 @@ describe("generateInfoPlist", () => {
     expect(plist).toContain("</plist>");
   });
 
+  it("includes all required Alfred workflow object types", () => {
+    const plist = generateInfoPlist("/usr/bin/snip", 20);
+    // These are the Alfred workflow object types used in the plist.
+    // Wrong version numbers for these cause "incompatible workflow" errors.
+    expect(plist).toContain("alfred.workflow.input.scriptfilter");
+    expect(plist).toContain("alfred.workflow.action.revealfile");
+    expect(plist).toContain("alfred.workflow.output.clipboard");
+    expect(plist).toContain("alfred.workflow.trigger.universalaction");
+    expect(plist).toContain("alfred.workflow.input.keyword");
+    expect(plist).toContain("alfred.workflow.output.notification");
+  });
+
+  it("includes all required top-level plist keys", () => {
+    const plist = generateInfoPlist("/usr/bin/snip", 20);
+    expect(plist).toContain("<key>disabled</key>");
+    expect(plist).toContain("<key>userconfigurationconfig</key>");
+    expect(plist).toContain("<key>connections</key>");
+    expect(plist).toContain("<key>objects</key>");
+  });
+
   it("handles snip paths with spaces safely", () => {
     const plist = generateInfoPlist("/Users/John Smith/bin/snip", 20);
     // The path must appear inside a quoted ${SNIP_BIN:=...} assignment

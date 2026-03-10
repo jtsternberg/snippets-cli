@@ -1,8 +1,9 @@
 import { Command } from "commander";
 import { homedir } from "node:os";
-import { resolve } from "node:path";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFileSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { loadConfig } from "../lib/config.js";
 
 interface CommandInfo {
@@ -902,85 +903,10 @@ export function generateInfoPlist(snipBin: string, maxResults: number): string {
 </plist>`;
 }
 
-// Base64-encoded 256×256 PNG icon for the Alfred workflow.
-// Dark charcoal rounded-rect with cyan ">" prompt symbol (SF Mono Bold).
-// Generated programmatically with Pillow — verified to render correctly.
-const WORKFLOW_ICON_B64 =
-  "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";
+// Bundled Alfred workflow icon (256×256 PNG).
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const WORKFLOW_ICON_PATH = resolve(__dirname, "../assets/alfred-icon.png");
 
 function escapeXml(str: string): string {
   return str
@@ -1019,12 +945,9 @@ function installAlfredWorkflow(): void {
   const plist = generateInfoPlist(snipBin, maxResults);
   writeFileSync(resolve(workflowDir, "info.plist"), plist, "utf-8");
 
-  // Write the workflow icon (non-fatal if it fails)
+  // Copy the workflow icon (non-fatal if it fails)
   try {
-    writeFileSync(
-      resolve(workflowDir, "icon.png"),
-      Buffer.from(WORKFLOW_ICON_B64, "base64"),
-    );
+    copyFileSync(WORKFLOW_ICON_PATH, resolve(workflowDir, "icon.png"));
   } catch {
     console.warn("Warning: Could not write workflow icon");
   }
