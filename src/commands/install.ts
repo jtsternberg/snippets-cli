@@ -235,7 +235,7 @@ function generateFishCompletions(commands: CommandInfo[]): string {
   return lines.join("\n");
 }
 
-function detectShell(): string {
+export function detectShell(): string {
   const shell = process.env.SHELL || "";
   if (shell.includes("zsh")) return "zsh";
   if (shell.includes("fish")) return "fish";
@@ -246,7 +246,7 @@ const COMPLETIONS_DIR = ".zsh/completions";
 const FPATH_LINE = `fpath=(~/${COMPLETIONS_DIR} $fpath)`;
 const COMPINIT_LINE = "autoload -Uz compinit && compinit";
 
-function getCompletionPath(shell: string): string {
+export function getCompletionPath(shell: string): string {
   switch (shell) {
     case "zsh":
       return resolve(homedir(), COMPLETIONS_DIR, "_snip");
