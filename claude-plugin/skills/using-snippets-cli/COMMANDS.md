@@ -30,6 +30,7 @@ Options:
 - `--title` - Snippet title
 - `--from-clipboard` - Read content from system clipboard
 - `--content` - Provide content inline
+- `--provider` - LLM provider override (`ollama`, `gemini`, `gemini-cli`, `claude`, `claude-cli`, `openai`, `openai-cli`, `auto`)
 
 ### edit
 Open a snippet in the default editor.
@@ -161,6 +162,7 @@ Options:
 - `-t`, `--type` - Snippet type for imported content
 - `--tags` - Comma-separated tags
 - `--no-enrich` - Skip LLM-powered enrichment (title, tags, description)
+- `--provider` - LLM provider override (`ollama`, `gemini`, `gemini-cli`, `claude`, `claude-cli`, `openai`, `openai-cli`, `auto`)
 
 ### export
 Export snippets to JSON or markdown.
@@ -193,6 +195,7 @@ Options:
 - `--force` - Overwrite existing metadata fields
 - `--type` - Filter by snippet type (with `--all`)
 - `--dry-run` - Show what would be updated without writing
+- `--provider` - LLM provider override (`ollama`, `gemini`, `gemini-cli`, `claude`, `claude-cli`, `openai`, `openai-cli`, `auto`)
 
 ## Configuration
 
@@ -222,7 +225,7 @@ snip config:llm:fallback ollama           # Set fallback provider
 snip config:llm:key gemini YOUR_KEY       # Set API key
 snip config:llm:model ollama llama3.2     # Set model
 ```
-Providers: `ollama`, `gemini`, `claude`, `openai`, `auto`
+Providers: `ollama`, `gemini`, `gemini-cli`, `claude`, `claude-cli`, `openai`, `openai-cli`, `auto`
 
 ## Integrations
 
