@@ -12,6 +12,7 @@ import { readClipboard } from "../lib/clipboard.js";
 import { EXIT_CODES } from "../types/index.js";
 import { updateAndEmbed } from "../lib/qmd.js";
 import { fmt } from "../lib/format.js";
+import ora from "ora";
 import { enrichSnippet, setProviderOverride, setDebugMode } from "../lib/llm.js";
 import type { LlmProviderName } from "../types/index.js";
 import { spawnSync } from "node:child_process";
@@ -132,7 +133,9 @@ export const addCommand = new Command("add")
     });
 
     // LLM enrichment: fill in missing metadata BEFORE writing the file
+    const spinner = ora("Enriching snippet…").start();
     const enriched = await enrichSnippet(frontmatter, content);
+    spinner.stop();
     if (Object.keys(enriched).length > 0) {
       if (enriched.title && !opts.title) title = enriched.title;
       if (enriched.language && !language) language = enriched.language;
