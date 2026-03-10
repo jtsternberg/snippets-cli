@@ -1054,6 +1054,7 @@ function installObsidian(): void {
   console.log('  - Set the folder to your default snippet type (e.g. "snippets")');
   console.log();
   console.log("Recommended community plugins:");
+  console.log("  - Obsidian Git — auto-commit and sync your snippets via git");
   console.log("  - Dataview — query snippets by frontmatter fields");
   console.log("  - Tag Wrangler — manage and rename tags");
   console.log("  - Templater — create snippet templates");
