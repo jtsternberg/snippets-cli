@@ -1029,7 +1029,8 @@ function installObsidian(): void {
   console.log();
 
   if (vaultName) {
-    console.log(`Vault already registered: "${vaultName}"`);
+    console.log(`Opening vault "${vaultName}"...`);
+    execSync(`open -a Obsidian "${libraryPath}"`);
     console.log();
   } else {
     console.log(`Step ${step++}: Open your snippet library as a vault`);
