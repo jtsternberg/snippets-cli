@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **BYOL (Bring Your Own LLM)** — multi-provider support for metadata enrichment: Ollama (default), Gemini, Claude, and OpenAI, via API keys or CLI tools
+- Provider variants for CLI tools: `gemini-cli`, `claude-cli`, `openai-cli` (use installed CLIs instead of API keys)
+- `snip enrich [name]` command to re-run LLM enrichment on existing snippets (`--all`, `--force`, `--dry-run`)
+- `snip config:llm` subcommands: `config:llm:provider`, `config:llm:fallback`, `config:llm:key`, `config:llm:model`
+- `--provider` flag on `add`, `import`, and `enrich` commands for per-invocation LLM override
+- Auto-fallback provider chain (`auto` mode) that tries available providers in order
+- Pre-push checklist skill for auditing docs/artifacts before pushing
+
 ## [0.1.1] - 2026-03-10
 
 ### Added
