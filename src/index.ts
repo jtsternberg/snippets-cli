@@ -18,6 +18,7 @@ import { importCommand } from "./commands/import.js";
 import { createInstallCommand } from "./commands/install.js";
 import { createUpgradeCommand } from "./commands/upgrade.js";
 import { exportCommand } from "./commands/export.js";
+import { execCommand } from "./commands/exec.js";
 
 const program = new Command();
 
@@ -44,6 +45,7 @@ program.addCommand(runCommand);
 program.addCommand(linkCommand);
 program.addCommand(importCommand);
 program.addCommand(exportCommand);
+program.addCommand(execCommand);
 program.addCommand(createInstallCommand(program));
 program.addCommand(createUpgradeCommand(program));
 
