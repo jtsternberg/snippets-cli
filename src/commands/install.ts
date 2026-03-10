@@ -415,25 +415,31 @@ function findExistingWorkflow(workflowsDir: string): string | null {
   return null;
 }
 
-function generateInfoPlist(snipBin: string, maxResults: number): string {
-  // Use SNIP_BIN env var if set, otherwise fall back to the detected path at install time.
-  // This allows users to override the path without reinstalling the workflow.
-  const searchScript = [
+export function generateInfoPlist(snipBin: string, maxResults: number): string {
+  // Shared preamble for all Alfred scripts:
+  // - Ensures common binary locations are on PATH
+  // - Sets SNIP_BIN to the detected path at install time unless the user has
+  //   already set it in Alfred's Workflow Environment Variables (Preferences →
+  //   Workflows → [workflow] → Configure Workflow → Environment Variables).
+  // Using ${VAR:=default} via the : builtin safely handles paths with spaces.
+  const preamble = [
     `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"`,
-    `SNIP_BIN="\${SNIP_BIN:-${snipBin}}"`,
+    `: "\${SNIP_BIN:=${snipBin}}"`,
+  ].join("\n");
+
+  const searchScript = [
+    preamble,
     `"$SNIP_BIN" search "{query}" --json -n ${maxResults}`,
   ].join("\n");
   const captureScript = [
-    `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"`,
-    `SNIP_BIN="\${SNIP_BIN:-${snipBin}}"`,
+    preamble,
     `echo -n "$1" | pbcopy`,
     `output=$("$SNIP_BIN" add --from-clipboard 2>&1)`,
     `filepath=$(echo "$output" | grep "^Created:" | sed 's/Created: //')`,
     `echo -n "$filepath"`,
   ].join("\n");
   const keywordCaptureScript = [
-    `export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"`,
-    `SNIP_BIN="\${SNIP_BIN:-${snipBin}}"`,
+    preamble,
     `output=$("$SNIP_BIN" add --from-clipboard 2>&1)`,
     `filepath=$(echo "$output" | grep "^Created:" | sed 's/Created: //')`,
     `echo -n "$filepath"`,
@@ -904,26 +910,6 @@ function escapeXml(str: string): string {
     .replace(/"/g, "&quot;");
 }
 
-// Base64-encoded 256x256 PNG icon for the Snip Search Alfred workflow.
-// A dark rounded-rectangle background with a cyan '>' terminal prompt symbol.
-const WORKFLOW_ICON_B64 =
-  "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAADL0lEQVR42u3bSQ1AIRBEwVGC" +
-  "ACSgB7G4gjsJQUDXoQxM0u/wl2p9bCBTOQIIACAAgAAAAgAIACAAgAAAAgAIACAAgAAAAgAI" +
-  "ACAAgAAAAgAIACAAgAAAAgAIACAAgAAAAgAIACAAgAAAAgAIACAAgAAAAgAIACAAgAAAAgAC4" +
-  "AggAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACA" +
-  "AgAIAAAAIACAAgAIAAAAIACAAIgCOAAAACAAgAIACAAAACAAgAIACAAAACAAgAIADc5tpP7oMA" +
-  "hI5fCBAA4xcCBMD4hQABEAAhQAAEQAgQAAEQAgRAAIQAARAAIUAABEAIEAAREAIEQASEAAEQ" +
-  "ASFAAIRACBAAIRACBEAIhAABEAIhQACEQAgQACEQAgRACIRAABxBCIRAABACIRAAhEAIBAAh" +
-  "EAIBQAiEQAAQAiEQAIRACAQAIRACAUAIhEAAEAIhEACEQAgEACEQAgFACIRAABACIRAAhEAI" +
-  "BAAhEAIBQAhEQAAQAhEQAIRABAQAIRAAAUAIBEAAEAIBEAAMXwAEAM8ABEAA8BYAAcB3AAgA" +
-  "vgREAPAvAAKA4SMAGD4CgOEjABg+AoDhIwAYPgJg+IaPABi+4SMAhm/4AuAIhm/4AoDhG74" +
-  "AYPiGLwAYvuELAIZv+AKA4SMAGD4CgOEjABg+AoDhIwAYPgKA4SMAGD4CgOEjAMZv+AiA8R" +
-  "s+AmD8ho8ACIDhIwACYPgIgAAYPgIgAIaPAAiA4SMA6QFwQwQgMALuhgAERsCtEIDACLgPAg" +
-  "AIACAAgAAAAgAIACAAgAAAAgAIACAAgAAAAgAIACAAgAAAAgAIAAgAIACAAAACAAgAIACAAAAC" +
-  "AAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAI" +
-  "ACAAAACAAgACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAI" +
-  "AAAAIACAAgAIAAAAIACAAgAIAAAH8H7hHP8BuslpgAAAAASUVORK5CYII=";
-
 function installAlfredWorkflow(): void {
   const prefsPath = getAlfredPrefsPath();
 
@@ -953,12 +939,6 @@ function installAlfredWorkflow(): void {
   const plist = generateInfoPlist(snipBin, maxResults);
   writeFileSync(resolve(workflowDir, "info.plist"), plist, "utf-8");
 
-  // Write the workflow icon
-  writeFileSync(
-    resolve(workflowDir, "icon.png"),
-    Buffer.from(WORKFLOW_ICON_B64, "base64"),
-  );
-
   console.log("Installed Alfred workflow: Snip Search");
   console.log();
   console.log(`  Keyword: snip`);
@@ -972,8 +952,8 @@ function installAlfredWorkflow(): void {
   console.log("  Space        Quick Look preview");
   console.log();
   console.log("Tip: Set max results with: snip config set alfred.maxResults 30");
-  console.log("Tip: Override snip binary with SNIP_BIN in your shell profile (~/.zshrc):")
-  console.log("       export SNIP_BIN=/path/to/snip");
+  console.log("Tip: Override snip binary with SNIP_BIN in Alfred's Workflow Environment Variables");
+  console.log("       (Alfred Preferences → Workflows → Snip Search → Configure Workflow → Environment Variables)");
 }
 
 export function createInstallCommand(program: Command): Command {
