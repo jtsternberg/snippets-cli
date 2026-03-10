@@ -56,7 +56,7 @@ snip show my-snippet               # Display in terminal
 | Command | Description |
 | --- | --- |
 | `snip init` | Initialize snippet library and config |
-| `snip add` | Add a new snippet (interactive or scripted) |
+| `snip add` | Add a new snippet (interactive or scripted, `--provider`) |
 | `snip show <name>` | Display snippet (`--raw`, `--code`) |
 | `snip copy <name>` | Copy snippet to clipboard |
 | `snip edit <name>` | Open snippet in editor |
@@ -68,9 +68,9 @@ snip show my-snippet               # Display in terminal
 | `snip rename <name> <new-name>` | Rename a snippet |
 | `snip run <name>` | Execute a snippet as a shell script |
 | `snip link <name>` | Create symlink to snippet |
-| `snip import <sources...>` | Import from files, globs, or URLs |
+| `snip import <sources...>` | Import from files, globs, or URLs (`--no-enrich`, `--provider`) |
 | `snip export [name]` | Export to JSON or Markdown (`--format`, `--output`, `--to-gist`) |
-| `snip enrich [name]` | Re-run LLM enrichment (`--all`, `--force`, `--dry-run`) |
+| `snip enrich [name]` | Re-run LLM enrichment (`--all`, `--force`, `--dry-run`, `--provider`) |
 | `snip config` | View or set configuration |
 | `snip config:types:add <name>` | Add a snippet type |
 | `snip config:llm` | View LLM provider configuration |

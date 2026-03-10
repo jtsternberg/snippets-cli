@@ -24,6 +24,10 @@
     "snippet-manager",
     "qmd",
     "ollama",
+    "gemini",
+    "claude",
+    "openai",
+    "llm",
     "alfred"
   ],
   "author": "Justin Sternberg",
