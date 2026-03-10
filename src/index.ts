@@ -47,4 +47,9 @@ program.addCommand(exportCommand);
 program.addCommand(createInstallCommand(program));
 program.addCommand(createUpgradeCommand(program));
 
-program.parseAsync(process.argv);
+program.parseAsync(process.argv).catch((err) => {
+  if (err?.name === "ExitPromptError") {
+    process.exit(0);
+  }
+  throw err;
+});
