@@ -88,7 +88,7 @@ _snip_snippets() {
   local snippets
   snippets=(\${(f)"$(snip list --json 2>/dev/null | node -e "
     let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{
-      try{JSON.parse(d).forEach(s=>console.log(s.slug+':'+s.title))}catch{}
+      try{JSON.parse(d).forEach(s=>console.log(s.slug+':'+'['+s.type+'] '+s.title))}catch{}
     })")"})
   _describe 'snippet' snippets
 }
@@ -214,7 +214,7 @@ function generateFishCompletions(commands: CommandInfo[]): string {
     "function __snip_slugs",
     '  snip list --json 2>/dev/null | node -e "',
     "    let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{",
-    "      try{JSON.parse(d).forEach(s=>console.log(s.slug+'\\\\t'+s.title))}catch{}",
+    "      try{JSON.parse(d).forEach(s=>console.log(s.slug+'\\\\t'+'['+s.type+'] '+s.title))}catch{}",
     '    })"',
     "end",
     "",
