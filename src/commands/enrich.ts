@@ -102,7 +102,9 @@ async function applyEnrichment(
   const frontmatter = opts.force
     ? {
         ...snippet.frontmatter,
+        title: "",
         description: "",
+        language: "",
         aliases: [],
         tags: [],
       }
