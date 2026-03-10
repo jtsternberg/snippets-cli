@@ -83,9 +83,8 @@ export const configTypesAddCommand = new Command("config:types:add")
     console.log(`Added type "${name}" and created ${typeDir}/`);
   });
 
-const VALID_PROVIDERS = [
-  "ollama", "gemini", "gemini-cli", "claude", "claude-cli", "openai", "openai-cli", "auto",
-];
+const VALID_PROVIDERS = [...getProviderNames(), "auto"];
+const VALID_FALLBACK_PROVIDERS = getProviderNames();
 
 // Show current LLM configuration
 export const configLlmCommand = new Command("config:llm")
@@ -124,7 +123,7 @@ export const configLlmProviderCommand = new Command("config:llm:provider")
 // Set fallback LLM provider
 export const configLlmFallbackCommand = new Command("config:llm:fallback")
   .description("Set the fallback LLM provider")
-  .argument("<provider>", `Provider name (${VALID_PROVIDERS.join(", ")}) or "none" to clear`)
+  .argument("<provider>", `Provider name (${VALID_FALLBACK_PROVIDERS.join(", ")}) or "none" to clear`)
   .action(async (provider: string) => {
     const config = loadConfig();
     if (provider === "none") {
@@ -133,8 +132,8 @@ export const configLlmFallbackCommand = new Command("config:llm:fallback")
       console.log("Fallback provider cleared.");
       return;
     }
-    if (!VALID_PROVIDERS.includes(provider)) {
-      console.error(`Invalid provider "${provider}". Choose from: ${VALID_PROVIDERS.join(", ")}`);
+    if (!VALID_FALLBACK_PROVIDERS.includes(provider)) {
+      console.error(`Invalid provider "${provider}". Choose from: ${VALID_FALLBACK_PROVIDERS.join(", ")}`);
       process.exit(EXIT_CODES.CONFIG_ERROR);
     }
     config.llm.fallbackProvider = provider as LlmProviderName;
