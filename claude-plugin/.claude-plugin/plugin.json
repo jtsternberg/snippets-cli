@@ -1,0 +1,14 @@
+{
+  "name": "snippets-cli",
+  "description": "Claude Code plugin for managing code snippets with semantic search and Obsidian-compatible markdown storage",
+  "version": "0.1.0",
+  "author": {
+    "name": "Justin Sternberg",
+    "url": "https://github.com/jtsternberg/snippets-cli"
+  },
+  "repository": "https://github.com/jtsternberg/snippets-cli",
+  "license": "MIT",
+  "keywords": ["snippets", "code", "markdown", "obsidian", "semantic-search", "clipboard"],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}
