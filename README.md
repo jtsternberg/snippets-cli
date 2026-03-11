@@ -1,5 +1,10 @@
 # snippets-cli (snip)
 
+[![npm version](https://img.shields.io/npm/v/@jtsternberg/snip.svg)](https://www.npmjs.com/package/@jtsternberg/snip)
+[![GitHub release](https://img.shields.io/github/v/release/jtsternberg/snippets-cli)](https://github.com/jtsternberg/snippets-cli/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/node/v/@jtsternberg/snip)](https://nodejs.org)
+
 <img src="assets/snippet-clipboard.svg" alt="snippets-cli icon" width="100" align="right" />
 
 CLI for your **snippet and prompt library**: code snippets, LLM prompts, and reusable content — with semantic search, Obsidian-compatible markdown storage, and LLM enrichment.
