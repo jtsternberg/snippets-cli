@@ -183,6 +183,48 @@ describe("snip doctor", () => {
   });
 });
 
+describe("snip exec", () => {
+  beforeAll(() => {
+    snip([
+      "add",
+      "--title", "Exec Test Script",
+      "--lang", "bash",
+      "--content", 'echo "arg1=$1 arg2=$2"',
+    ]);
+  });
+
+  afterAll(() => {
+    snip(["rm", "exec-test-script", "--force"]);
+  });
+
+  it("executes snippet without passthrough args", () => {
+    const output = snip(["exec", "exec-test-script"]);
+    expect(output).toBe("arg1= arg2=");
+  });
+
+  it("passes arguments to script via -- separator", () => {
+    const output = snip(["exec", "exec-test-script", "--", "hello", "world"]);
+    expect(output).toBe("arg1=hello arg2=world");
+  });
+
+  it("passes arguments to script without -- separator", () => {
+    const output = snip(["exec", "exec-test-script", "hello", "world"]);
+    expect(output).toBe("arg1=hello arg2=world");
+  });
+
+  it("shows args in --dry-run output", () => {
+    const output = snip(["exec", "exec-test-script", "--dry-run", "--", "hello", "world"]);
+    expect(output).toContain("# args: hello world");
+    expect(output).toContain('echo "arg1=$1 arg2=$2"');
+  });
+
+  it("--dry-run without args does not show args line", () => {
+    const output = snip(["exec", "exec-test-script", "--dry-run"]);
+    expect(output).not.toContain("# args:");
+    expect(output).toContain('echo "arg1=$1 arg2=$2"');
+  });
+});
+
 describe("snip rename", () => {
   it("renames a snippet", () => {
     const output = snip(["rename", "test-snippet", "Renamed Snippet"]);

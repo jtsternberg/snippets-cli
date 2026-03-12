@@ -1,5 +1,8 @@
 import { Command } from "commander";
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
+import { writeFileSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
@@ -25,9 +28,10 @@ const LANG_TO_SHELL: Record<string, string> = {
 export const execCommand = new Command("exec")
   .description("Execute a snippet as a script")
   .argument("<name>", "Snippet name or slug")
+  .argument("[scriptArgs...]", "Arguments to pass to the script")
   .option("--shell <shell>", "Override interpreter (e.g., bash, python3, node)")
   .option("--dry-run", "Print the command without executing")
-  .action((name: string, opts: { shell?: string; dryRun?: boolean }) => {
+  .action((name: string, scriptArgs: string[], opts: { shell?: string; dryRun?: boolean }) => {
     const result = resolveSnippet(name);
 
     if (!result) {
@@ -57,17 +61,42 @@ export const execCommand = new Command("exec")
     if (opts.dryRun) {
       console.log(fmt.dim(`# ${snippet.frontmatter.title}`));
       console.log(fmt.dim(`# interpreter: ${shell}`));
+      if (scriptArgs.length > 0) {
+        console.log(fmt.dim(`# args: ${scriptArgs.join(" ")}`));
+      }
       console.log(code);
       return;
     }
 
-    try {
-      execSync(code, {
-        shell,
-        stdio: "inherit",
-      });
-    } catch (err) {
-      const exitCode = (err as { status?: number }).status ?? 1;
-      process.exit(exitCode);
+    if (scriptArgs.length === 0) {
+      try {
+        execSync(code, {
+          shell,
+          stdio: "inherit",
+        });
+      } catch (err) {
+        const exitCode = (err as { status?: number }).status ?? 1;
+        process.exit(exitCode);
+      }
+    } else {
+      const tmpFile = join(tmpdir(), `snip-exec-${Date.now()}.tmp`);
+      try {
+        writeFileSync(tmpFile, code, { mode: 0o700 });
+        const [interpreter, ...interpreterArgs] = shell.split(" ");
+        const result = spawnSync(interpreter, [...interpreterArgs, tmpFile, ...scriptArgs], {
+          stdio: "inherit",
+        });
+        if (result.error) {
+          console.error(`Failed to execute snippet: ${result.error.message}`);
+          process.exit(1);
+        }
+        process.exit(result.status ?? 0);
+      } finally {
+        try {
+          unlinkSync(tmpFile);
+        } catch {
+          // ignore cleanup errors
+        }
+      }
     }
   });
