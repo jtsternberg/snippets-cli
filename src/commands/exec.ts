@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { execSync, spawnSync } from "node:child_process";
-import { writeFileSync, unlinkSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
@@ -23,6 +23,23 @@ const LANG_TO_SHELL: Record<string, string> = {
   ts: "npx tsx",
   perl: "perl",
   php: "php",
+};
+
+const LANG_TO_EXT: Record<string, string> = {
+  bash: ".sh",
+  sh: ".sh",
+  zsh: ".sh",
+  fish: ".fish",
+  python: ".py",
+  python3: ".py",
+  ruby: ".rb",
+  node: ".js",
+  javascript: ".js",
+  js: ".js",
+  typescript: ".ts",
+  ts: ".ts",
+  perl: ".pl",
+  php: ".php",
 };
 
 export const execCommand = new Command("exec")
@@ -68,35 +85,24 @@ export const execCommand = new Command("exec")
       return;
     }
 
-    if (scriptArgs.length === 0) {
-      try {
-        execSync(code, {
-          shell,
-          stdio: "inherit",
-        });
-      } catch (err) {
-        const exitCode = (err as { status?: number }).status ?? 1;
-        process.exit(exitCode);
+    // Always write to a temp file so every interpreter (bash, node, python3, etc.)
+    // receives the script as a file path and positional args work uniformly.
+    const ext = LANG_TO_EXT[lang] || ".sh";
+    const tmpDir = mkdtempSync(join(tmpdir(), "snip-exec-"));
+    const tmpFile = join(tmpDir, `script${ext}`);
+    try {
+      writeFileSync(tmpFile, code, { mode: 0o700 });
+      const [interpreter, ...interpreterArgs] = shell.split(" ");
+      const result = spawnSync(interpreter, [...interpreterArgs, tmpFile, ...scriptArgs], {
+        stdio: "inherit",
+      });
+      if (result.error) {
+        console.error(`Failed to execute snippet: ${result.error.message}`);
+        process.exitCode = 1;
+      } else {
+        process.exitCode = result.status ?? 0;
       }
-    } else {
-      const tmpFile = join(tmpdir(), `snip-exec-${Date.now()}.tmp`);
-      try {
-        writeFileSync(tmpFile, code, { mode: 0o700 });
-        const [interpreter, ...interpreterArgs] = shell.split(" ");
-        const result = spawnSync(interpreter, [...interpreterArgs, tmpFile, ...scriptArgs], {
-          stdio: "inherit",
-        });
-        if (result.error) {
-          console.error(`Failed to execute snippet: ${result.error.message}`);
-          process.exit(1);
-        }
-        process.exit(result.status ?? 0);
-      } finally {
-        try {
-          unlinkSync(tmpFile);
-        } catch {
-          // ignore cleanup errors
-        }
-      }
+    } finally {
+      try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
     }
   });
