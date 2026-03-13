@@ -103,7 +103,7 @@ export const execCommand = new Command("exec")
       });
       if (spawnResult.error) {
         console.error(`Failed to execute snippet: ${spawnResult.error.message}`);
-        process.exitCode = 1;
+        process.exitCode = EXIT_CODES.GENERAL_ERROR;
       } else {
         process.exitCode = spawnResult.status ?? 0;
       }
