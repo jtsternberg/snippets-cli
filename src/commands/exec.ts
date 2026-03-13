@@ -98,14 +98,14 @@ export const execCommand = new Command("exec")
       const [interpreter, ...interpreterArgs] = isKnownMultiWord
         ? shell.split(" ")
         : [shell];
-      const result = spawnSync(interpreter, [...interpreterArgs, tmpFile, ...scriptArgs], {
+      const spawnResult = spawnSync(interpreter, [...interpreterArgs, tmpFile, ...scriptArgs], {
         stdio: "inherit",
       });
-      if (result.error) {
-        console.error(`Failed to execute snippet: ${result.error.message}`);
+      if (spawnResult.error) {
+        console.error(`Failed to execute snippet: ${spawnResult.error.message}`);
         process.exitCode = 1;
       } else {
-        process.exitCode = result.status ?? 0;
+        process.exitCode = spawnResult.status ?? 0;
       }
     } finally {
       try {
