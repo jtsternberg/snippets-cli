@@ -7,9 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-12
+
 ### Added
 
 - `snip exec` now supports passing arguments to scripts via `--` separator (e.g., `snip exec my-script -- arg1 arg2`)
+
+### Changed
+
+- `snip exec` now uses temp-file-based execution with `spawnSync` for all interpreters, improving security and consistency
+- Unified `LANG_TO_SHELL` and `LANG_TO_EXT` into a single `LANG_CONFIG` map to prevent drift
+- Dry-run output now quotes each argument with `JSON.stringify` for clarity when args contain spaces
+
+### Fixed
+
+- Path traversal protection in snippet resolution — names with `../` can no longer escape the library directory
+- Temp file cleanup now logs a warning on failure instead of silently swallowing errors
 
 ## [1.0.0] - 2026-03-10
 

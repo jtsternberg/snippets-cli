@@ -1,6 +1,6 @@
 {
   "name": "@jtsternberg/snip",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CLI snippet manager with semantic search and Obsidian-compatible markdown storage",
   "type": "module",
   "bin": {
