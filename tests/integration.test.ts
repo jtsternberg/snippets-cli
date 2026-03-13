@@ -214,7 +214,7 @@ describe("snip exec", () => {
 
   it("shows args in --dry-run output", () => {
     const output = snip(["exec", "exec-test-script", "--dry-run", "--", "hello", "world"]);
-    expect(output).toContain("# args: hello world");
+    expect(output).toContain('# args: "hello" "world"');
     expect(output).toContain('echo "arg1=$1 arg2=$2"');
   });
 

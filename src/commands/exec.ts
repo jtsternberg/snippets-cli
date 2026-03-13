@@ -63,7 +63,7 @@ export const execCommand = new Command("exec")
       console.log(fmt.dim(`# ${snippet.frontmatter.title}`));
       console.log(fmt.dim(`# interpreter: ${shell}`));
       if (scriptArgs.length > 0) {
-        console.log(fmt.dim(`# args: ${scriptArgs.join(" ")}`));
+        console.log(fmt.dim(`# args: ${scriptArgs.map(a => JSON.stringify(a)).join(" ")}`));
       }
       console.log(code);
       return;
