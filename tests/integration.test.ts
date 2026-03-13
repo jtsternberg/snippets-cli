@@ -223,6 +223,11 @@ describe("snip exec", () => {
     expect(output).not.toContain("# args:");
     expect(output).toContain('echo "arg1=$1 arg2=$2"');
   });
+
+  it("passes arguments with spaces and special characters", () => {
+    const output = snip(["exec", "exec-test-script", "--", "hello world", "it's here"]);
+    expect(output).toBe("arg1=hello world arg2=it's here");
+  });
 });
 
 describe("snip rename", () => {
