@@ -8,38 +8,21 @@ import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
 import { fmt } from "../lib/format.js";
 
-const LANG_TO_SHELL: Record<string, string> = {
-  bash: "bash",
-  sh: "sh",
-  zsh: "zsh",
-  fish: "fish",
-  python: "python3",
-  python3: "python3",
-  ruby: "ruby",
-  node: "node",
-  javascript: "node",
-  js: "node",
-  typescript: "npx tsx",
-  ts: "npx tsx",
-  perl: "perl",
-  php: "php",
-};
-
-const LANG_TO_EXT: Record<string, string> = {
-  bash: ".sh",
-  sh: ".sh",
-  zsh: ".sh",
-  fish: ".fish",
-  python: ".py",
-  python3: ".py",
-  ruby: ".rb",
-  node: ".js",
-  javascript: ".js",
-  js: ".js",
-  typescript: ".ts",
-  ts: ".ts",
-  perl: ".pl",
-  php: ".php",
+const LANG_CONFIG: Record<string, { shell: string; ext: string }> = {
+  bash:       { shell: "bash",     ext: ".sh" },
+  sh:         { shell: "sh",       ext: ".sh" },
+  zsh:        { shell: "zsh",      ext: ".sh" },
+  fish:       { shell: "fish",     ext: ".fish" },
+  python:     { shell: "python3",  ext: ".py" },
+  python3:    { shell: "python3",  ext: ".py" },
+  ruby:       { shell: "ruby",     ext: ".rb" },
+  node:       { shell: "node",     ext: ".js" },
+  javascript: { shell: "node",     ext: ".js" },
+  js:         { shell: "node",     ext: ".js" },
+  typescript: { shell: "npx tsx",  ext: ".ts" },
+  ts:         { shell: "npx tsx",  ext: ".ts" },
+  perl:       { shell: "perl",     ext: ".pl" },
+  php:        { shell: "php",      ext: ".php" },
 };
 
 export const execCommand = new Command("exec")
@@ -73,7 +56,8 @@ export const execCommand = new Command("exec")
 
     // Determine interpreter
     const lang = snippet.frontmatter.language?.toLowerCase() || "";
-    const shell = opts.shell || LANG_TO_SHELL[lang] || "bash";
+    const langConfig = LANG_CONFIG[lang];
+    const shell = opts.shell || langConfig?.shell || "bash";
 
     if (opts.dryRun) {
       console.log(fmt.dim(`# ${snippet.frontmatter.title}`));
@@ -87,14 +71,14 @@ export const execCommand = new Command("exec")
 
     // Always write to a temp file so every interpreter (bash, node, python3, etc.)
     // receives the script as a file path and positional args work uniformly.
-    const ext = LANG_TO_EXT[lang] || ".sh";
+    const ext = langConfig?.ext || ".sh";
     const tmpDir = mkdtempSync(join(tmpdir(), "snip-exec-"));
     const tmpFile = join(tmpDir, `script${ext}`);
     try {
       writeFileSync(tmpFile, code, { mode: 0o700 });
       // Split multi-word interpreters (e.g. "npx tsx") but preserve paths with spaces
       // from --shell by only splitting known LANG_TO_SHELL values.
-      const isKnownMultiWord = Object.values(LANG_TO_SHELL).includes(shell);
+      const isKnownMultiWord = Object.values(LANG_CONFIG).some(c => c.shell === shell);
       const [interpreter, ...interpreterArgs] = isKnownMultiWord
         ? shell.split(" ")
         : [shell];
