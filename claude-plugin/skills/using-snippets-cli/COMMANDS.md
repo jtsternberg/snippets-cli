@@ -134,6 +134,23 @@ Options:
 - `--no-copy` - Print result to stdout without copying to clipboard
 - `--skip-vars` - Leave unfilled variables as-is
 
+### exec
+Execute a snippet as a script.
+```bash
+snip exec my-script                        # Run script with default interpreter
+snip exec my-script -- arg1 arg2           # Pass arguments to the script
+snip exec my-script --shell python3        # Override interpreter
+snip exec my-script --dry-run             # Preview without executing
+snip exec my-script --dry-run -- a b      # Preview with args
+```
+Options:
+- `--shell` - Override the interpreter (e.g., `bash`, `python3`, `node`)
+- `--dry-run` - Print the script and interpreter without executing
+
+Notes:
+- The interpreter is inferred from the snippet's language (e.g., `bash`, `python3`, `node`)
+- Arguments after `--` are passed as positional parameters to the script (`$1`, `$2`, …)
+
 ## Cross-Linking
 
 ### link

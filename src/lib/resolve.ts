@@ -31,10 +31,12 @@ export function resolveSnippet(name: string): ResolveResult | null {
   const libPath = getLibraryPath();
   const config = loadConfig();
 
+  const resolvedLibPath = resolve(libPath);
+
   // 1. Type-prefixed match: "prompts/code-review"
   if (name.includes("/")) {
     const filePath = resolve(libPath, `${name}.md`);
-    if (existsSync(filePath)) {
+    if (filePath.startsWith(resolvedLibPath + "/") && existsSync(filePath)) {
       return {
         snippet: parseSnippetFile(filePath),
         matchType: "prefix",
@@ -45,7 +47,7 @@ export function resolveSnippet(name: string): ResolveResult | null {
   // 2. Exact slug match across all type directories
   for (const type of config.types) {
     const filePath = resolve(libPath, type, `${name}.md`);
-    if (existsSync(filePath)) {
+    if (filePath.startsWith(resolvedLibPath + "/") && existsSync(filePath)) {
       return {
         snippet: parseSnippetFile(filePath),
         matchType: "exact",

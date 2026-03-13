@@ -1,33 +1,37 @@
 import { Command } from "commander";
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
+import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
 import { fmt } from "../lib/format.js";
 
-const LANG_TO_SHELL: Record<string, string> = {
-  bash: "bash",
-  sh: "sh",
-  zsh: "zsh",
-  fish: "fish",
-  python: "python3",
-  python3: "python3",
-  ruby: "ruby",
-  node: "node",
-  javascript: "node",
-  js: "node",
-  typescript: "npx tsx",
-  ts: "npx tsx",
-  perl: "perl",
-  php: "php",
+const LANG_CONFIG: Record<string, { shell: string; ext: string }> = {
+  bash:       { shell: "bash",     ext: ".sh" },
+  sh:         { shell: "sh",       ext: ".sh" },
+  zsh:        { shell: "zsh",      ext: ".sh" },
+  fish:       { shell: "fish",     ext: ".fish" },
+  python:     { shell: "python3",  ext: ".py" },
+  python3:    { shell: "python3",  ext: ".py" },
+  ruby:       { shell: "ruby",     ext: ".rb" },
+  node:       { shell: "node",     ext: ".js" },
+  javascript: { shell: "node",     ext: ".js" },
+  js:         { shell: "node",     ext: ".js" },
+  typescript: { shell: "npx tsx",  ext: ".ts" },
+  ts:         { shell: "npx tsx",  ext: ".ts" },
+  perl:       { shell: "perl",     ext: ".pl" },
+  php:        { shell: "php",      ext: ".php" },
 };
 
 export const execCommand = new Command("exec")
   .description("Execute a snippet as a script")
   .argument("<name>", "Snippet name or slug")
+  .argument("[scriptArgs...]", "Arguments to pass to the script")
   .option("--shell <shell>", "Override interpreter (e.g., bash, python3, node)")
   .option("--dry-run", "Print the command without executing")
-  .action((name: string, opts: { shell?: string; dryRun?: boolean }) => {
+  .action((name: string, scriptArgs: string[], opts: { shell?: string; dryRun?: boolean }) => {
     const result = resolveSnippet(name);
 
     if (!result) {
@@ -52,22 +56,41 @@ export const execCommand = new Command("exec")
 
     // Determine interpreter
     const lang = snippet.frontmatter.language?.toLowerCase() || "";
-    const shell = opts.shell || LANG_TO_SHELL[lang] || "bash";
+    const langConfig = LANG_CONFIG[lang];
+    const shell = opts.shell || langConfig?.shell || "bash";
 
     if (opts.dryRun) {
       console.log(fmt.dim(`# ${snippet.frontmatter.title}`));
       console.log(fmt.dim(`# interpreter: ${shell}`));
+      if (scriptArgs.length > 0) {
+        console.log(fmt.dim(`# args: ${scriptArgs.map(a => JSON.stringify(a)).join(" ")}`));
+      }
       console.log(code);
       return;
     }
 
+    // Always write to a temp file so every interpreter (bash, node, python3, etc.)
+    // receives the script as a file path and positional args work uniformly.
+    const ext = langConfig?.ext || ".sh";
+    const tmpDir = mkdtempSync(join(tmpdir(), "snip-exec-"));
+    const tmpFile = join(tmpDir, `script${ext}`);
     try {
-      execSync(code, {
-        shell,
+      writeFileSync(tmpFile, code, { mode: 0o700 });
+      const [interpreter, ...interpreterArgs] = shell.split(" ");
+      const spawnResult = spawnSync(interpreter, [...interpreterArgs, tmpFile, ...scriptArgs], {
         stdio: "inherit",
       });
-    } catch (err) {
-      const exitCode = (err as { status?: number }).status ?? 1;
-      process.exit(exitCode);
+      if (spawnResult.error) {
+        console.error(`Failed to execute snippet: ${spawnResult.error.message}`);
+        process.exitCode = EXIT_CODES.GENERAL_ERROR;
+      } else {
+        process.exitCode = spawnResult.status ?? 0;
+      }
+    } finally {
+      try {
+        rmSync(tmpDir, { recursive: true, force: true });
+      } catch (e) {
+        console.error(`Warning: failed to clean up temp dir ${tmpDir}: ${e}`);
+      }
     }
   });

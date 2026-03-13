@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `snip exec` now supports passing arguments to scripts via `--` separator (e.g., `snip exec my-script -- arg1 arg2`)
+
 ## [1.0.0] - 2026-03-10
 
 ### Added

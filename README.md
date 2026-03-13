@@ -73,7 +73,7 @@ snip show my-snippet               # Display in terminal
 | `snip find <query>` | Fuzzy text search |
 | `snip rename <name> <new-name>` | Rename a snippet |
 | `snip run <name>` | Fill template variables and copy result (`--var key=value`) |
-| `snip exec <name>` | Execute a snippet as a script (`--shell`, `--dry-run`) |
+| `snip exec <name> [args...]` | Execute a snippet as a script (`--shell`, `--dry-run`); positional args are passed to the script (use `--` before args starting with `-`) |
 | `snip link <name>` | Create symlink to snippet |
 | `snip import [sources...]` | Import from files, globs, URLs, or gists (`--from-gist`, `--provider`) |
 | `snip export [name]` | Export to JSON, Markdown, or GitHub Gist (`--to-gist`, `--public`) |
