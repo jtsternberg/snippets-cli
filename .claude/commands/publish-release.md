@@ -52,6 +52,7 @@ Create a new release. Version can be provided as $1, or auto-detected from commi
 8. **Publish to npm** (ask for confirmation first):
    - First verify npm auth: `npm whoami`. If not logged in, ask user to run `npm login` manually.
    - Check the package exists: `npm view @jtsternberg/snip version`
+   - Sign in to 1Password CLI first: `op signin --account my.1password.com`
    - Publish with OTP from 1Password: `npm publish --access public --otp=$(op item get "npmjs.com" --otp)`
    - Verify: `npm view @jtsternberg/snip version` should show the new version
    - Note: Package is scoped (@jtsternberg/snip) so `--access public` is required.
