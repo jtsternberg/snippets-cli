@@ -103,6 +103,10 @@ export const execCommand = new Command("exec")
         process.exitCode = result.status ?? 0;
       }
     } finally {
-      try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+      try {
+        rmSync(tmpDir, { recursive: true, force: true });
+      } catch (e) {
+        console.error(`Warning: failed to clean up temp dir ${tmpDir}: ${e}`);
+      }
     }
   });
