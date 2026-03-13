@@ -76,12 +76,7 @@ export const execCommand = new Command("exec")
     const tmpFile = join(tmpDir, `script${ext}`);
     try {
       writeFileSync(tmpFile, code, { mode: 0o700 });
-      // Split multi-word interpreters (e.g. "npx tsx") but preserve paths with spaces
-      // from --shell by only splitting known LANG_TO_SHELL values.
-      const isKnownMultiWord = Object.values(LANG_CONFIG).some(c => c.shell === shell);
-      const [interpreter, ...interpreterArgs] = isKnownMultiWord
-        ? shell.split(" ")
-        : [shell];
+      const [interpreter, ...interpreterArgs] = shell.split(" ");
       const spawnResult = spawnSync(interpreter, [...interpreterArgs, tmpFile, ...scriptArgs], {
         stdio: "inherit",
       });
