@@ -50,10 +50,12 @@ Create a new release. Version can be provided as $1, or auto-detected from commi
    ```
 
 8. **Publish to npm** (ask for confirmation first):
-   ```bash
-   npm publish --access public
-   ```
-   Note: Package is scoped (@jtsternberg/snip) so `--access public` is required.
+   - First verify npm auth: `npm whoami`. If not logged in, ask user to run `npm login` manually.
+   - Check the package exists: `npm view @jtsternberg/snip version`
+   - Publish with OTP from 1Password: `npm publish --access public --otp=$(op item get "npmjs.com" --otp)`
+   - Verify: `npm view @jtsternberg/snip version` should show the new version
+   - Note: Package is scoped (@jtsternberg/snip) so `--access public` is required.
+   - npm page: https://www.npmjs.com/package/@jtsternberg/snip
 
 9. **Create GitHub release** (ask for confirmation first):
    - Use the changelog content from step 3 as the release notes
