@@ -1,11 +1,11 @@
 ---
 name: using-snippets-cli
-description: Manages code snippets via the snip CLI tool. Use when the user mentions snip, snippets, code fragments, prompt templates, snippet library, or wants to save, search, organize, or retrieve code stored as Obsidian-compatible markdown.
+description: Manages code snippets via the snip CLI. Saves, searches, organizes, and retrieves reusable code, commands, and prompt templates stored as Obsidian-compatible markdown. Triggers on snip commands, snippets, code fragments, prompt templates, or snippet library operations.
 ---
 
 # Using snippets-cli
 
-The `snip` CLI manages a local library of code snippets, prompt templates, and reference fragments stored as Obsidian-compatible markdown files.
+The `snip` CLI manages a local library of code snippets, prompt templates, and executable commands stored as Obsidian-compatible markdown files.
 
 ## Prerequisites
 
@@ -15,138 +15,87 @@ The `snip` CLI manages a local library of code snippets, prompt templates, and r
 - Optional: `gh` CLI for GitHub Gist sync (`gh auth login` to authenticate)
 - Optional: An LLM provider for enrichment — Ollama (default), Gemini, Claude, or OpenAI (`snip config:llm`)
 
-## Quick Reference
-
-### Adding Snippets
-```bash
-snip add --from-clipboard --tags "js,util"           # Add from clipboard
-snip add --title "My Snippet" --content "..."        # Add inline
-snip add --title "Deploy" --content "..." --type command  # Add as command (executable)
-snip add --title "Prompt" --content "..." --type prompt   # Add as prompt (template)
-snip add --from-clipboard --lang python --tags "util"     # Specify language
-```
-
-The `--type` flag determines the subdirectory and how the snippet should be used:
-- `--type command` → stored in `command/`, run with `snip exec`
-- `--type prompt` → stored in `prompt/`, run with `snip run`
-- Other types (snippet, reference, etc.) → stored in their respective directories
-
-### Retrieving Snippets
-```bash
-snip show my-snippet                           # Display snippet (formatted)
-snip show my-snippet --code                    # Show only code block content (no fences)
-snip show my-snippet --raw                     # Full file with frontmatter (useful for inspecting metadata)
-snip copy my-snippet                           # Copy to clipboard
-```
-
-### Searching
-```bash
-snip find "async function"                     # Text search
-snip find "hook" --type prompt --tag react     # Filtered text search
-snip search "error handling patterns"          # Semantic search (requires qmd)
-```
-
-### Organizing
-```bash
-snip list                                      # List all snippets
-snip list --type prompt --tag ai               # Filter by type and tag
-snip list --lang python                        # Filter by language
-snip tags                                      # Show all tags with counts
-snip rename old-name "New Title"               # Rename snippet and update cross-links
-snip link my-snippet --auto                    # Auto-link related snippets
-snip rm my-snippet                             # Delete a snippet (prompts for confirmation)
-snip rm my-snippet --force                     # Delete without confirmation
-```
-
-### Templates (snip run)
-```bash
-snip run my-template --var name=Widget         # Fill template variables, copy to clipboard
-snip run my-template --var name=Widget --no-copy  # Print without copying
-```
-
-Use `snip run` for **prompt-type** snippets with `{{variables}}` — it substitutes values and copies the result.
-
-### Executing Scripts (snip exec)
-```bash
-snip exec my-command                           # Execute a command/script snippet
-snip exec my-command -- arg1 arg2              # Pass positional args (fill {{vars}} in order)
-snip exec my-command --dry-run                 # Preview without executing
-snip exec my-command --shell python3           # Override interpreter
-```
-
-Use `snip exec` for **command-type** snippets — it actually runs the snippet as a script.
-
-**The rule: `--type command` → `snip exec`, `--type prompt` → `snip run`. Do NOT suggest `snip run ... | sh` — that's what `snip exec` is for.**
-
-### Importing Snippets
-```bash
-snip import ./script.sh                        # Import from local file
-snip import "./scripts/*.sh"                   # Import from glob pattern
-snip import https://example.com/snippet.py     # Import from URL
-snip import --from-gist <gist-url-or-id>       # Import from GitHub Gist
-snip import ./file.sh --type command --tags "deploy"  # With type and tags
-snip import ./file.sh --no-enrich              # Skip LLM enrichment
-```
-
-### Exporting Snippets
-```bash
-snip export my-snippet                         # Export as JSON to stdout
-snip export my-snippet -f md                   # Export as Markdown
-snip export my-snippet --to-gist               # Publish as secret GitHub Gist
-snip export my-snippet --to-gist --public      # Publish as public gist
-snip export -t command -o commands.json        # Export all commands to file
-```
-
-### GitHub Gist Sync
-```bash
-snip sync                                      # Sync all gist-linked snippets
-snip sync --dry-run                            # Preview sync actions
-```
-
-### Enrichment
-```bash
-snip enrich my-snippet                         # Re-run LLM enrichment on one snippet
-snip enrich --all                              # Enrich all snippets with missing metadata
-snip enrich --all --force                      # Overwrite existing metadata too
-snip enrich my-snippet --dry-run               # Preview what would change
-snip enrich --provider gemini                  # Use specific LLM provider
-```
-
-### Configuration
-```bash
-snip config                                    # View current config
-snip config --json                             # Full config as JSON
-snip config snippetDir                         # Get a specific config value
-snip config:llm                                # View LLM provider settings
-snip config:llm:provider gemini                # Set primary LLM provider
-snip config:llm:fallback ollama                # Set fallback provider
-snip config:llm:key gemini <api-key>           # Set API key for a provider
-snip config:llm:model gemini gemini-2.0-flash  # Set model for a provider
-snip config:types:add recipe                   # Add a custom snippet type directory
-```
-
-LLM providers: `ollama`, `gemini`, `gemini-cli`, `claude`, `claude-cli`, `openai`, `openai-cli`, `auto`
-
-### Troubleshooting
-```bash
-snip doctor                                    # Check library health and integrations
-snip upgrade                                   # Update snip CLI and reinstall integrations
-snip install completions zsh                   # Install shell completions
-snip install claude-code                       # Install Claude Code plugin
-```
-
-## JSON Output
-
-Add `--json` to `list`, `tags`, `find`, and `search` for machine-readable output:
+## Core Commands
 
 ```bash
-snip list --json | jq '.[].name'
-snip tags --json | jq '.[] | select(.count > 3)'
-snip find "query" --json | jq '.[].title'
-snip search "query" --json | jq '.[].score'
+snip add --title "..." --content "..." --type <type> --tags "..."  # Add a snippet
+snip show <name>                          # View a snippet
+snip show <name> --raw                    # View with frontmatter metadata
+snip copy <name>                          # Copy to clipboard
+snip find "query"                         # Text search
+snip search "query"                       # Semantic search (requires qmd)
+snip exec <name> -- args                  # Execute a command snippet
+snip run <name> --var key=value           # Fill a prompt template
+snip rm <name> --force                    # Delete a snippet
+snip list --json                          # List all snippets (JSON)
+snip tags                                 # Show all tags with counts
 ```
 
-## Agent Warnings
+## The Type → Execution Rule
 
-- **Do NOT use `snip edit`** — it opens `$EDITOR` which blocks non-interactive agents. Use `snip show --raw` to read, then modify the file directly if needed.
-- **Do NOT suggest `snip run ... | sh`** — use `snip exec` instead.
+The `--type` flag on `snip add` determines where a snippet is stored and how it should be used:
+
+| Type | Stored in | Execute with | Purpose |
+|------|-----------|-------------|---------|
+| `command` | `command/` | `snip exec <name>` | Runnable shell commands and scripts |
+| `prompt` | `prompt/` | `snip run <name> --var k=v` | Templates with `{{variables}}` |
+| `snippet` | `snippet/` | `snip show` / `snip copy` | Code fragments for reference |
+| `reference` | `reference/` | `snip show` / `snip copy` | Documentation and notes |
+
+**After creating a snippet, always tell the user the retrieval command based on its type.**
+
+## When to Use What
+
+**User wants to save code/command for reuse**:
+1. Is it executable? → `--type command`
+2. Is it a template with `{{variables}}`? → `--type prompt`
+3. Otherwise → `--type snippet` (or `--type reference` for docs)
+4. `snip add --title "..." --content "..." --type <type> --tags "..."`
+5. Tell user how to use it based on type (see table above)
+
+**User wants to find a snippet**:
+1. Know the name? → `snip show <name>`
+2. Know keywords? → `snip find "query"`
+3. Conceptual search? → `snip search "query"`
+
+**User wants to import from files/URLs**:
+→ `snip import <source> --type <type> --tags "..."`
+
+**User reports snip errors**:
+→ Run `snip doctor` first. See troubleshooting-snippets skill for detailed diagnosis.
+
+## Agent Guidelines
+
+### Always use non-interactive flags
+
+These commands prompt for input without flags — agents MUST provide them:
+
+| Command | Required flags | Why |
+|---------|---------------|-----|
+| `snip add` | `--title` and (`--content` or `--from-clipboard`) | Bare `snip add` opens interactive mode |
+| `snip rm` | `--force` | Prompts for confirmation without it |
+| `snip link` | `--auto` | Interactive selection without it |
+| `snip upgrade` | `--yes` | Prompts for confirmation without it |
+
+### Never use
+
+- `snip edit` — opens `$EDITOR`, blocks non-interactive agents
+- `snip run ... | sh` — use `snip exec` instead
+- Bare `snip add` (no title/content) — triggers interactive mode
+
+### After creating a snippet
+
+Always tell the user the appropriate retrieval/execution command:
+- `--type command` → "Run it with: `snip exec <name> -- args`"
+- `--type prompt` → "Use it with: `snip run <name> --var key=value`"
+- Other types → "View with `snip show <name>` or copy with `snip copy <name>`"
+
+### JSON output for programmatic use
+
+Add `--json` to `list`, `tags`, `find`, and `search` when processing results programmatically.
+
+## Detailed Reference
+
+For complete command documentation with all flags and options: [COMMANDS.md](COMMANDS.md)
+
+For workflow patterns (bulk import, gist sync, LLM config, cross-linking, JSON automation): [WORKFLOWS.md](WORKFLOWS.md)

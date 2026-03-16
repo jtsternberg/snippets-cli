@@ -50,6 +50,24 @@ snip run email-template --var name=Alice --var topic="Q1 Review" --no-copy
 snip run complex-template --var name=Widget --skip-vars
 ```
 
+## Executing Command Snippets
+
+Run saved commands directly from the library.
+
+```bash
+# Execute a command snippet
+snip exec deploy-staging
+
+# Pass arguments (substituted into {{variables}} in order)
+snip exec git-diff-tree-show-changed-files -- abc123
+
+# Preview before running
+snip exec deploy-prod --dry-run
+
+# Override interpreter
+snip exec my-script --shell python3
+```
+
 ## Bulk Import
 
 Import snippets from local files or URLs.
