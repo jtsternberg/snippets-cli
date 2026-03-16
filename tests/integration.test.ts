@@ -81,6 +81,49 @@ describe("snip add (non-interactive)", () => {
   });
 });
 
+describe("snip add --type validation", () => {
+  it("rejects unregistered type with helpful error", { timeout: 15000 }, () => {
+    let caught: { stderr?: string } | undefined;
+    try {
+      snip(["add", "--title", "Bad Type", "--content", "echo hi", "--type", "command"]);
+    } catch (err: unknown) {
+      caught = err as { stderr: string };
+    }
+    expect(caught).toBeDefined();
+    expect(caught!.stderr).toContain('Type "command" is not registered');
+    expect(caught!.stderr).toContain("snip config:types:add command");
+  });
+
+  it("does not create a directory for unregistered type", () => {
+    try {
+      snip(["add", "--title", "Ghost", "--content", "echo ghost", "--type", "phantom"]);
+    } catch {
+      // expected
+    }
+    expect(existsSync(resolve(libDir, "phantom"))).toBe(false);
+  });
+
+  it("accepts registered types", () => {
+    const output = snip([
+      "add", "--title", "Type Check OK", "--content", "echo ok", "--type", "snippets",
+    ]);
+    expect(output).toContain("Created:");
+    // Clean up
+    snip(["rm", "type-check-ok", "--force"]);
+  });
+});
+
+describe("snip import --type validation", () => {
+  it("rejects unregistered type on import", () => {
+    const tmpFile = resolve(testDir, "import-test.sh");
+    writeFileSync(tmpFile, "echo hello", "utf-8");
+
+    expect(() =>
+      snip(["import", tmpFile, "--type", "command", "--no-enrich"])
+    ).toThrow();
+  });
+});
+
 describe("snip list", () => {
   it("lists created snippets", () => {
     const output = snip(["list"]);

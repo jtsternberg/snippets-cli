@@ -1,7 +1,8 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import {
   getDefaultConfig,
   getLibraryPath,
+  validateType,
 } from "../src/lib/config.js";
 import { getProviderNames } from "../src/lib/providers/index.js";
 
@@ -38,6 +39,51 @@ describe("getLibraryPath", () => {
     const result = getLibraryPath();
     expect(result).not.toContain("~");
     expect(result).toContain("my-snippets");
+  });
+});
+
+describe("validateType", () => {
+  it("accepts a registered type without throwing", () => {
+    const config = { ...getDefaultConfig(), types: ["snippets", "prompts"] };
+    // Should not throw or exit
+    expect(() => validateType("snippets", config)).not.toThrow();
+    expect(() => validateType("prompts", config)).not.toThrow();
+  });
+
+  it("exits with code 3 for an unregistered type", () => {
+    const config = { ...getDefaultConfig(), types: ["snippets", "prompts"] };
+    const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const mockError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(() => validateType("command", config)).toThrow("process.exit called");
+    expect(mockExit).toHaveBeenCalledWith(3);
+    expect(mockError).toHaveBeenCalledWith(
+      expect.stringContaining('Type "command" is not registered')
+    );
+    expect(mockError).toHaveBeenCalledWith(
+      expect.stringContaining("snip config:types:add command")
+    );
+
+    mockExit.mockRestore();
+    mockError.mockRestore();
+  });
+
+  it("lists available types in the error message", () => {
+    const config = { ...getDefaultConfig(), types: ["snippets", "prompts", "reference"] };
+    const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("process.exit called");
+    });
+    const mockError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(() => validateType("command", config)).toThrow();
+    expect(mockError).toHaveBeenCalledWith(
+      expect.stringContaining("snippets, prompts, reference")
+    );
+
+    mockExit.mockRestore();
+    mockError.mockRestore();
   });
 });
 
