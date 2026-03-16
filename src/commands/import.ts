@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { resolve, basename, extname } from "node:path";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { glob } from "glob";
-import { getLibraryPath, loadConfig } from "../lib/config.js";
+import { getLibraryPath, loadConfig, validateType } from "../lib/config.js";
 import {
   createNewFrontmatter,
   writeSnippetFile,
@@ -100,6 +100,7 @@ async function importSingleFile(
 
   // Determine type directory
   const type = opts.type || (language === "prompt" ? "prompts" : config.defaultType);
+  validateType(type, config);
   const typeDir = resolve(libPath, type);
   mkdirSync(typeDir, { recursive: true });
 
@@ -318,6 +319,7 @@ async function importFromGist(opts: {
   if (!tags.includes("gist")) tags.push("gist");
 
   const type = opts.type || config.defaultType;
+  validateType(type, config);
   const typeDir = resolve(libPath, type);
   mkdirSync(typeDir, { recursive: true });
 

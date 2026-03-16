@@ -3,7 +3,6 @@
   "backend": "dolt",
   "dolt_mode": "server",
   "dolt_server_host": "127.0.0.1",
-  "dolt_server_port": 3308,
-  "dolt_database": "snippets_cli",
+  "dolt_database": "beads_snip",
   "project_id": "c2ff433f-b054-46dd-8464-aa7b35da2134"
 }

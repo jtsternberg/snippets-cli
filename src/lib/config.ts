@@ -96,6 +96,18 @@ export function getConfigKeys(): string[] {
   return keys;
 }
 
+export function validateType(type: string, config?: SnipConfig): void {
+  const cfg = config || loadConfig();
+  if (!cfg.types.includes(type)) {
+    const available = cfg.types.join(", ");
+    console.error(
+      `Type "${type}" is not registered. Available types: ${available}\n` +
+      `Run \`snip config:types:add ${type}\` to register it.`
+    );
+    process.exit(3); // EXIT_CODES.CONFIG_ERROR
+  }
+}
+
 export function updateConfig(
   updates: Partial<SnipConfig> & Record<string, unknown>,
 ): SnipConfig {

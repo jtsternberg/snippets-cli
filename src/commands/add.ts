@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { resolve } from "node:path";
 import { existsSync, mkdirSync } from "node:fs";
 import { input, select } from "@inquirer/prompts";
-import { getLibraryPath, loadConfig } from "../lib/config.js";
+import { getLibraryPath, loadConfig, validateType } from "../lib/config.js";
 import {
   createNewFrontmatter,
   writeSnippetFile,
@@ -169,6 +169,9 @@ export const addCommand = new Command("add")
       tags,
       type,
     };
+
+    // Validate type is registered
+    validateType(type, config);
 
     // Ensure type directory exists
     const typeDir = resolve(libPath, type);
