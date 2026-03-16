@@ -44,14 +44,17 @@ The `--type` flag on `snip add` determines where a snippet is stored and how it 
 
 **After creating a snippet, always tell the user the retrieval command based on its type.**
 
+**IMPORTANT**: Types must be registered before use. Check available types with `snip config --json` (look at the `types` array). If the desired type isn't registered, add it first with `snip config:types:add <type>`. Using an unregistered type may silently create orphaned files that `snip` cannot find.
+
 ## When to Use What
 
 **User wants to save code/command for reuse**:
-1. Is it executable? → `--type command`
-2. Is it a template with `{{variables}}`? → `--type prompt`
-3. Otherwise → `--type snippet` (or `--type reference` for docs)
-4. `snip add --title "..." --content "..." --type <type> --tags "..."`
-5. Tell user how to use it based on type (see table above)
+1. Check registered types: `snip config --json` → look at `types` array
+2. Is it executable? → `--type command` (register first if needed: `snip config:types:add command`)
+3. Is it a template with `{{variables}}`? → `--type prompt`
+4. Otherwise → use the default type (usually `snippets`)
+5. `snip add --title "..." --content "..." --type <type> --tags "..."`
+6. Tell user how to use it based on type (see table above)
 
 **User wants to find a snippet**:
 1. Know the name? → `snip show <name>`
