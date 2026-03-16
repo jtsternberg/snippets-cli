@@ -66,6 +66,10 @@ The `--type` flag on `snip add` determines where a snippet is stored and how it 
 
 ## Agent Guidelines
 
+### Use `--help` liberally
+
+When unsure about a command's flags or behavior, run `snip <command> --help` before guessing. Every snip subcommand supports `--help`. This is faster and more reliable than inferring flags from memory.
+
 ### Always use non-interactive flags
 
 These commands prompt for input without flags — agents MUST provide them:
