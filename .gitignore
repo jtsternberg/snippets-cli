@@ -4,3 +4,7 @@ dist/
 .DS_Store
 .env
 .beads/backup
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
