@@ -48,6 +48,16 @@ snip run my-template --var name=Widget         # Fill template variables
 snip run my-template --var name=Widget --no-copy  # Print without copying
 ```
 
+### Executing Scripts
+```bash
+snip exec my-command                           # Execute a command/script snippet
+snip exec my-command -- arg1 arg2              # Pass positional args (fill {{vars}} in order)
+snip exec my-command --dry-run                 # Preview without executing
+snip exec my-command --shell python3           # Override interpreter
+```
+
+**IMPORTANT**: When you create a snippet with `--type command`, tell the user to run it with `snip exec` (not `snip run`). `snip run` is for filling template variables and copying to clipboard. `snip exec` actually runs the snippet as a script. The rule: `--type command` → `snip exec`, `--type prompt` → `snip run`.
+
 ### GitHub Gist Sync
 ```bash
 snip export my-snippet --to-gist               # Publish as secret gist
