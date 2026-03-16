@@ -273,6 +273,36 @@ describe("snip exec", () => {
   });
 });
 
+describe("snip exec with {{template}} variables", () => {
+  beforeAll(() => {
+    snip([
+      "add",
+      "--title", "Template Exec Test",
+      "--lang", "bash",
+      "--content", 'echo "id={{id}} name={{name}}"',
+    ]);
+  });
+
+  afterAll(() => {
+    snip(["rm", "template-exec-test", "--force"]);
+  });
+
+  it("substitutes {{variables}} with positional args in order", () => {
+    const output = snip(["exec", "template-exec-test", "--", "abc123", "widget"]);
+    expect(output).toBe("id=abc123 name=widget");
+  });
+
+  it("substitutes {{variables}} in --dry-run output", () => {
+    const output = snip(["exec", "template-exec-test", "--dry-run", "--", "abc123", "widget"]);
+    expect(output).toContain('echo "id=abc123 name=widget"');
+  });
+
+  it("leaves unmatched {{variables}} when not enough args", () => {
+    const output = snip(["exec", "template-exec-test", "--dry-run", "--", "abc123"]);
+    expect(output).toContain('echo "id=abc123 name={{name}}"');
+  });
+});
+
 describe("snip rename", () => {
   it("renames a snippet", () => {
     const output = snip(["rename", "test-snippet", "Renamed Snippet"]);

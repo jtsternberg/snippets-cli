@@ -47,7 +47,24 @@ export const execCommand = new Command("exec")
     }
 
     const { snippet } = result;
-    const code = extractCopyContent(snippet);
+    let code = extractCopyContent(snippet);
+
+    // Substitute {{variables}} with positional args in order
+    const varPattern = /\{\{(\w+)\}\}/g;
+    const varNames: string[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = varPattern.exec(code)) !== null) {
+      if (!varNames.includes(match[1])) {
+        varNames.push(match[1]);
+      }
+    }
+    if (varNames.length > 0 && scriptArgs.length > 0) {
+      for (let i = 0; i < varNames.length && i < scriptArgs.length; i++) {
+        code = code.replaceAll(`{{${varNames[i]}}}`, scriptArgs[i]);
+      }
+      // Remaining args after template substitution become positional args
+      scriptArgs = scriptArgs.slice(varNames.length);
+    }
 
     if (!code.trim()) {
       console.error("Snippet has no code content to execute.");
