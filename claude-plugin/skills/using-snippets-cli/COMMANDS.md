@@ -19,6 +19,7 @@ Options: `-f`, `--force`
 Add a new snippet to the library.
 ```bash
 snip add                                          # Interactive mode
+snip add "content here"                           # Positional content (shorthand for --content)
 snip add --from-clipboard --tags "js,async"       # From clipboard with tags
 snip add --title "Fetch Helper" --content "..."   # Inline content
 snip add --type prompt --lang markdown --tags ai  # Full options
@@ -252,6 +253,14 @@ snip config editor vim         # Set a config value
 snip config --json             # JSON output
 ```
 Options: `--json`
+
+### config:library
+Set the snippet library path.
+```bash
+snip config:library ~/snippets          # Set library path
+snip config:library /custom/path/snips  # Absolute path
+```
+Use this when `snip` points to the wrong directory. Then run `snip init` if the path doesn't exist yet.
 
 ### config:types:add
 Add a custom snippet type.

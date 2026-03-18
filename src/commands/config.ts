@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import {
+  assertLibraryExists,
   loadConfig,
   saveConfig,
   configExists,
@@ -8,6 +9,7 @@ import {
 import { getProviderNames } from "../lib/providers/index.js";
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { homedir } from "node:os";
 import { EXIT_CODES } from "../types/index.js";
 import type { LlmProviderName } from "../types/index.js";
 
@@ -73,14 +75,54 @@ export const configTypesAddCommand = new Command("config:types:add")
       return;
     }
 
+    // Validate library exists before attempting anything
+    const libPath = getLibraryPath(config);
+    assertLibraryExists(libPath);
+
+    // Create directory first — only save config if mkdir succeeds
+    const typeDir = resolve(libPath, name);
+    mkdirSync(typeDir, { recursive: true });
+
     config.types.push(name);
     saveConfig(config);
 
-    // Create the directory
-    const typeDir = resolve(getLibraryPath(config), name);
-    mkdirSync(typeDir, { recursive: true });
-
     console.log(`Added type "${name}" and created ${typeDir}/`);
+  });
+
+// Subcommand for removing types
+export const configTypesRemoveCommand = new Command("config:types:remove")
+  .description("Remove a snippet type")
+  .argument("<name>", "Type name to remove")
+  .action((name: string) => {
+    const config = loadConfig();
+
+    if (!config.types.includes(name)) {
+      console.error(`Type "${name}" is not registered.`);
+      process.exit(EXIT_CODES.CONFIG_ERROR);
+    }
+
+    if (config.defaultType === name) {
+      console.error(`Cannot remove "${name}" — it is the default type. Change the default first with: snip config defaultType <type>`);
+      process.exit(EXIT_CODES.CONFIG_ERROR);
+    }
+
+    config.types = config.types.filter((t) => t !== name);
+    saveConfig(config);
+
+    console.log(`Removed type "${name}" from config.`);
+    console.log(`Note: the directory was not deleted. Remove it manually if needed.`);
+  });
+
+// Subcommand for setting library path (alias for: snip config libraryPath <path>)
+export const configLibraryCommand = new Command("config:library")
+  .description("Set the snippet library path")
+  .argument("<path>", "Path to the snippet library directory")
+  .action((libraryPath: string) => {
+    const resolved = libraryPath.replace(/^~/, homedir());
+    const config = loadConfig();
+    config.libraryPath = resolved;
+    saveConfig(config);
+    console.log(`Library path set to: ${resolved}`);
   });
 
 const VALID_PROVIDERS = [...getProviderNames(), "auto"];

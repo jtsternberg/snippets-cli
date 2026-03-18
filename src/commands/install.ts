@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, copyFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { loadConfig, getLibraryPath, getConfigKeys } from "../lib/config.js";
+import { assertLibraryExists, loadConfig, getLibraryPath, getConfigKeys } from "../lib/config.js";
 import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../lib/obsidian.js";
 import { fmt, status } from "../lib/format.js";
 
@@ -1069,10 +1069,7 @@ function installObsidian(): void {
   const config = loadConfig();
   const libraryPath = getLibraryPath(config);
 
-  if (!existsSync(libraryPath)) {
-    console.error("Snippet library not initialized. Run `snip init` first.");
-    process.exit(1);
-  }
+  assertLibraryExists(libraryPath);
 
   const hasCli = isObsidianCliAvailable();
   const vaultName = hasCli ? getVaultName(libraryPath) : null;

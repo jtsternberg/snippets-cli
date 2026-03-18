@@ -5,7 +5,7 @@ import { getAllSnippets } from "../lib/resolve.js";
 import { extractCopyContent, parseSnippetFile } from "../lib/frontmatter.js";
 import { writeClipboard } from "../lib/clipboard.js";
 import { formatAlfredResults, formatAlfredError } from "../lib/alfred.js";
-import { getLibraryPath } from "../lib/config.js";
+import { assertLibraryExists, getLibraryPath } from "../lib/config.js";
 import { existsSync } from "node:fs";
 import type { Snippet } from "../types/index.js";
 import { formatSnippetLine } from "../lib/format.js";
@@ -18,14 +18,7 @@ export const searchCommand = new Command("search")
   .option("--mode <mode>", "Search mode: query (hybrid), search (keyword), vsearch (vector)", "query")
   .action(async (query: string, opts) => {
     const libPath = getLibraryPath();
-    if (!existsSync(libPath)) {
-      if (opts.json) {
-        console.log(JSON.stringify(formatAlfredError("Library not initialized. Run: snip init")));
-      } else {
-        console.error("Library not initialized. Run: snip init");
-      }
-      process.exit(3);
-    }
+    assertLibraryExists(libPath);
 
     const maxResults = parseInt(opts.max, 10);
     let results: Snippet[] = [];
