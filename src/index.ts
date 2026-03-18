@@ -10,6 +10,7 @@ import { tagsCommand } from "./commands/tags.js";
 import {
   configCommand,
   configTypesAddCommand,
+  configTypesRemoveCommand,
   configLibraryCommand,
   configLlmCommand,
   configLlmProviderCommand,
@@ -48,6 +49,7 @@ program.addCommand(listCommand);
 program.addCommand(tagsCommand);
 program.addCommand(configCommand);
 program.addCommand(configTypesAddCommand);
+program.addCommand(configTypesRemoveCommand);
 program.addCommand(configLibraryCommand);
 program.addCommand(configLlmCommand);
 program.addCommand(configLlmProviderCommand);
