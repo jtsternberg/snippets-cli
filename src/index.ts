@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { assertLibraryExists, getLibraryPath } from "./lib/config.js";
 import { initCommand } from "./commands/init.js";
 import { addCommand } from "./commands/add.js";
 import { showCommand } from "./commands/show.js";
@@ -69,6 +70,19 @@ program.addCommand(syncCommand);
 program.addCommand(enrichCommand);
 program.addCommand(createInstallCommand(program));
 program.addCommand(createUpgradeCommand(program));
+
+// Commands that don't require an initialized library
+const LIBRARY_EXEMPT = new Set([
+  "init", "doctor",
+  "config", "config:types:remove", "config:library",
+  "config:llm", "config:llm:provider", "config:llm:fallback", "config:llm:key", "config:llm:model",
+]);
+
+program.hook("preAction", (_thisCommand, actionCommand) => {
+  if (!LIBRARY_EXEMPT.has(actionCommand.name())) {
+    assertLibraryExists(getLibraryPath());
+  }
+});
 
 program.parseAsync(process.argv).catch((err) => {
   if (err?.name === "ExitPromptError") {
