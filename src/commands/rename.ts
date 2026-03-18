@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { renameSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { resolveSnippet, exitIfAmbiguous, exitIfNotFound, getAllSnippets } from "../lib/resolve.js";
+import { resolveSnippet, exitIfAmbiguous, exitIfFuzzy, exitIfNotFound, getAllSnippets } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { slugify } from "../lib/slug.js";
 import { loadConfig } from "../lib/config.js";
@@ -14,7 +14,7 @@ export const renameCommand = new Command("rename")
     const result = resolveSnippet(oldName);
 
     exitIfAmbiguous(result, oldName, "rename", `"${newTitle}"`);
-
+    exitIfFuzzy(result, oldName);
     exitIfNotFound(result, oldName);
 
     const { snippet } = result;

@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { resolveSnippet, getFuzzyMatches, exitIfAmbiguous } from "../lib/resolve.js";
+import { resolveSnippet, exitIfAmbiguous, exitIfFuzzy, exitIfNotFound } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
 import { fmt } from "../lib/format.js";
@@ -35,23 +35,8 @@ export const execCommand = new Command("exec")
     const result = resolveSnippet(name);
 
     exitIfAmbiguous(result, name, "exec");
-
-    // Reject fuzzy matches for exec — a substring typo shouldn't run the wrong script
-    if (!result || result.matchType === "fuzzy") {
-      const fuzzy = result
-        ? [result.snippet]
-        : getFuzzyMatches(name);
-      if (fuzzy.length > 0) {
-        console.error(`Snippet "${name}" not found. Refusing to execute fuzzy match.`);
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      } else {
-        console.error(`Snippet "${name}" not found.`);
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfFuzzy(result, name);
+    exitIfNotFound(result, name);
 
     const { snippet } = result;
     let code = extractCopyContent(snippet);

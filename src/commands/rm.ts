@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { unlinkSync } from "node:fs";
 import { confirm } from "@inquirer/prompts";
-import { resolveSnippet, exitIfAmbiguous, exitIfNotFound, getAllSnippets } from "../lib/resolve.js";
+import { resolveSnippet, exitIfAmbiguous, exitIfFuzzy, exitIfNotFound, getAllSnippets } from "../lib/resolve.js";
 import { update as qmdUpdate } from "../lib/qmd.js";
 
 export const rmCommand = new Command("rm")
@@ -12,7 +12,7 @@ export const rmCommand = new Command("rm")
     const result = resolveSnippet(name);
 
     exitIfAmbiguous(result, name, "rm");
-
+    exitIfFuzzy(result, name);
     exitIfNotFound(result, name);
 
     const { snippet } = result;

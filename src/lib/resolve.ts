@@ -132,6 +132,23 @@ export function exitIfAmbiguous(
 }
 
 /**
+ * If the result is a fuzzy match, treat it as not-found with a suggestion.
+ * Destructive commands (exec, rm, rename) should reject fuzzy matches to
+ * prevent accidental operations on the wrong snippet.
+ */
+export function exitIfFuzzy(
+  result: ResolveResult | null,
+  name: string,
+): asserts result is Exclude<ResolveResult, { matchType: "fuzzy" }> | null {
+  if (result?.matchType === "fuzzy") {
+    console.error(`Snippet "${name}" not found. Refusing fuzzy match for destructive command.`);
+    console.error("\nDid you mean:");
+    console.error(`  ${result.snippet.slug} — ${result.snippet.frontmatter.title}`);
+    process.exit(EXIT_CODES.NOT_FOUND);
+  }
+}
+
+/**
  * If the result is null, print "not found" with fuzzy suggestions and exit.
  * Uses TypeScript assertion to narrow away null for callers.
  */
