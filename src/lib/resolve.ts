@@ -3,6 +3,7 @@ import { resolve, join, relative, basename, dirname, isAbsolute } from "node:pat
 import { parseSnippetFile } from "./frontmatter.js";
 import { getLibraryPath, loadConfig } from "./config.js";
 import type { Snippet, ResolveResult, AmbiguousResult } from "../types/index.js";
+import { EXIT_CODES } from "../types/index.js";
 
 export function getAllSnippets(libraryPath?: string): Snippet[] {
   const libPath = libraryPath || getLibraryPath();
@@ -113,6 +114,26 @@ export function resolveSnippetLoose(name: string): ResolveResult | null {
     return { snippet: result.snippets[0], matchType: "picked" };
   }
   return result;
+}
+
+/**
+ * If the result is ambiguous, print disambiguation suggestions and exit.
+ * Uses TypeScript assertion to narrow the union for callers.
+ */
+export function exitIfAmbiguous(
+  result: ResolveResult | AmbiguousResult | null,
+  name: string,
+  command: string,
+  argsSuffix?: string,
+): asserts result is ResolveResult | null {
+  if (result && result.matchType === "ambiguous") {
+    console.error(`Multiple snippets match "${name}". Use the full path:`);
+    for (const s of result.snippets) {
+      const suffix = argsSuffix ? ` ${argsSuffix}` : "";
+      console.error(`  snip ${command} ${getSnippetPrefix(s)}${suffix}`);
+    }
+    process.exit(EXIT_CODES.NOT_FOUND);
+  }
 }
 
 export function getFuzzyMatches(name: string): Snippet[] {

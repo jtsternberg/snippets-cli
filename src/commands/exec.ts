@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { resolveSnippet, getFuzzyMatches, getSnippetPrefix } from "../lib/resolve.js";
+import { resolveSnippet, getFuzzyMatches, exitIfAmbiguous } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
 import { fmt } from "../lib/format.js";
@@ -34,14 +34,7 @@ export const execCommand = new Command("exec")
   .action((name: string, scriptArgs: string[], opts: { shell?: string; dryRun?: boolean }) => {
     const result = resolveSnippet(name);
 
-    // Ambiguous: same slug exists in multiple type directories
-    if (result && result.matchType === "ambiguous") {
-      console.error(`Multiple snippets match "${name}". Use the full path:`);
-      for (const s of result.snippets) {
-        console.error(`  snip exec ${getSnippetPrefix(s)}`);
-      }
-      return process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfAmbiguous(result, name, "exec");
 
     // Reject fuzzy matches for exec — a substring typo shouldn't run the wrong script
     if (!result || result.matchType === "fuzzy") {

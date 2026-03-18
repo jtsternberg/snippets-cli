@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { unlinkSync } from "node:fs";
 import { confirm } from "@inquirer/prompts";
-import { resolveSnippet, getFuzzyMatches, getSnippetPrefix, getAllSnippets } from "../lib/resolve.js";
+import { resolveSnippet, getFuzzyMatches, exitIfAmbiguous, getAllSnippets } from "../lib/resolve.js";
 import { EXIT_CODES } from "../types/index.js";
 import { update as qmdUpdate } from "../lib/qmd.js";
 
@@ -12,14 +12,7 @@ export const rmCommand = new Command("rm")
   .action(async (name: string, opts: { force?: boolean }) => {
     const result = resolveSnippet(name);
 
-    // Ambiguous: same slug exists in multiple type directories
-    if (result && result.matchType === "ambiguous") {
-      console.error(`Multiple snippets match "${name}". Use the full path:`);
-      for (const s of result.snippets) {
-        console.error(`  snip rm ${getSnippetPrefix(s)}`);
-      }
-      return process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfAmbiguous(result, name, "rm");
 
     if (!result) {
       const fuzzy = getFuzzyMatches(name);
