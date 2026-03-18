@@ -9,6 +9,7 @@ import {
 import { getProviderNames } from "../lib/providers/index.js";
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
+import { homedir } from "node:os";
 import { EXIT_CODES } from "../types/index.js";
 import type { LlmProviderName } from "../types/index.js";
 
@@ -86,6 +87,18 @@ export const configTypesAddCommand = new Command("config:types:add")
     saveConfig(config);
 
     console.log(`Added type "${name}" and created ${typeDir}/`);
+  });
+
+// Subcommand for setting library path (alias for: snip config libraryPath <path>)
+export const configLibraryCommand = new Command("config:library")
+  .description("Set the snippet library path")
+  .argument("<path>", "Path to the snippet library directory")
+  .action((libraryPath: string) => {
+    const resolved = libraryPath.replace(/^~/, homedir());
+    const config = loadConfig();
+    config.libraryPath = resolved;
+    saveConfig(config);
+    console.log(`Library path set to: ${resolved}`);
   });
 
 const VALID_PROVIDERS = [...getProviderNames(), "auto"];
