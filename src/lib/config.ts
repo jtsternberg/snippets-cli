@@ -96,6 +96,21 @@ export function getConfigKeys(): string[] {
   return keys;
 }
 
+export function assertLibraryExists(libPath: string): void {
+  if (!existsSync(libPath)) {
+    console.error(
+      `Snippet library not found at: ${libPath}\n` +
+      `\n` +
+      `If this path is wrong, update it:\n` +
+      `  snip config libraryPath ~/snippets\n` +
+      `\n` +
+      `If the library has never been initialized, create it:\n` +
+      `  snip init`
+    );
+    process.exit(3); // EXIT_CODES.CONFIG_ERROR
+  }
+}
+
 export function validateType(type: string, config?: SnipConfig): void {
   const cfg = config || loadConfig();
   if (!cfg.types.includes(type)) {

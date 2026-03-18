@@ -1,8 +1,8 @@
 import { Command } from "commander";
 import { resolve } from "node:path";
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { input, select } from "@inquirer/prompts";
-import { getLibraryPath, loadConfig, validateType } from "../lib/config.js";
+import { assertLibraryExists, getLibraryPath, loadConfig, validateType } from "../lib/config.js";
 import {
   createNewFrontmatter,
   writeSnippetFile,
@@ -45,12 +45,7 @@ export const addCommand = new Command("add")
     const config = loadConfig();
     const libPath = getLibraryPath(config);
 
-    if (!existsSync(libPath)) {
-      console.error(
-        "Snippet library not initialized. Run `snip init` first.",
-      );
-      process.exit(EXIT_CODES.CONFIG_ERROR);
-    }
+    assertLibraryExists(libPath);
 
     let title = opts.title || "";
     let language = opts.lang || "";

@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { resolve, basename, extname } from "node:path";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { glob } from "glob";
-import { getLibraryPath, loadConfig, validateType } from "../lib/config.js";
+import { assertLibraryExists, getLibraryPath, loadConfig, validateType } from "../lib/config.js";
 import {
   createNewFrontmatter,
   writeSnippetFile,
@@ -196,10 +196,7 @@ export const importCommand = new Command("import")
     const config = loadConfig();
     const libPath = getLibraryPath(config);
 
-    if (!existsSync(libPath)) {
-      console.error("Snippet library not initialized. Run `snip init` first.");
-      process.exit(EXIT_CODES.CONFIG_ERROR);
-    }
+    assertLibraryExists(libPath);
 
     const tags = opts.tags
       ? opts.tags.split(",").map((t: string) => t.trim())
@@ -298,10 +295,7 @@ async function importFromGist(opts: {
   const config = loadConfig();
   const libPath = getLibraryPath(config);
 
-  if (!existsSync(libPath)) {
-    console.error("Snippet library not initialized. Run `snip init` first.");
-    process.exit(EXIT_CODES.CONFIG_ERROR);
-  }
+  assertLibraryExists(libPath);
 
   const gistId = parseGistId(opts.fromGist);
   const gist = fetchGist(gistId);
