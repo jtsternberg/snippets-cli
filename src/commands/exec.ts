@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
+import { extractTemplateVariables, fillTemplateVariables } from "../lib/template.js";
 import { EXIT_CODES } from "../types/index.js";
 import { fmt } from "../lib/format.js";
 
@@ -49,21 +50,21 @@ export const execCommand = new Command("exec")
     const { snippet } = result;
     let code = extractCopyContent(snippet);
 
-    // Substitute {{variables}} with positional args in order
-    const varPattern = /\{\{(\w+)\}\}/g;
-    const varNames: string[] = [];
-    let match: RegExpExecArray | null;
-    while ((match = varPattern.exec(code)) !== null) {
-      if (!varNames.includes(match[1])) {
-        varNames.push(match[1]);
+    // Substitute {{variables}} with positional args in order.
+    // Variables with defaults use that default when no arg is provided.
+    const templateVariables = extractTemplateVariables(code);
+    if (templateVariables.length > 0) {
+      const variableValues = new Map<string, string>();
+
+      for (let i = 0; i < templateVariables.length; i++) {
+        if (i < scriptArgs.length) {
+          variableValues.set(templateVariables[i].name, scriptArgs[i]);
+        }
       }
-    }
-    if (varNames.length > 0 && scriptArgs.length > 0) {
-      for (let i = 0; i < varNames.length && i < scriptArgs.length; i++) {
-        code = code.replaceAll(`{{${varNames[i]}}}`, scriptArgs[i]);
-      }
+
+      code = fillTemplateVariables(code, variableValues);
       // Remaining args after template substitution become positional args
-      scriptArgs = scriptArgs.slice(varNames.length);
+      scriptArgs = scriptArgs.slice(Math.min(scriptArgs.length, templateVariables.length));
     }
 
     if (!code.trim()) {

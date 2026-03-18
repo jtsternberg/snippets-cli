@@ -12,7 +12,7 @@ CLI for your **snippet and prompt library**: code snippets, LLM prompts, and reu
 ## What you can store
 
 - 📋 **Code snippets** — boilerplate, helpers, and reference fragments (by language)
-- 💬 **Prompt library** — system prompts, instruction templates, and AI prompts with `{{variable}}` placeholders; run with `snip run <name>` and pass variables at use time
+- 💬 **Prompt library** — system prompts, instruction templates, and AI prompts with `{{variable}}` or `{{variable|default}}` placeholders; run with `snip run <name>` and pass variables at use time
 - 🏷️ **Custom types** — add your own (e.g. `checklists`, `templates`, `agents`) via `snip config:types:add <name>`
 
 ## Features
@@ -20,7 +20,7 @@ CLI for your **snippet and prompt library**: code snippets, LLM prompts, and reu
 - 📁 **Local-first markdown storage** — Obsidian-compatible, plain files you own
 - 🔍 **Semantic search** via [qmd](https://github.com/tobilu/qmd) vector embeddings
 - 🤖 **BYOL (Bring Your Own LLM)** — auto-generate title, description, tags, and language with your choice of Ollama, Gemini, Claude, or OpenAI
-- 💬 **Prompt templates** — first-class `prompts/` type and `{{var}}` syntax; `snip run` fills variables
+- 💬 **Prompt templates** — first-class `prompts/` type and `{{var}}` / `{{var|default}}` syntax; `snip run` fills variables
 - ⌘ **Alfred workflow** integration for macOS
 - ⚡ **Shell completions** for bash, zsh, and fish
 - 📥 **Import** from files, globs, URLs, or GitHub Gists
@@ -53,6 +53,7 @@ snip add --type prompts --title "Code review" --lang prompt  # Add to prompt lib
 snip add --title "My Script" --lang bash  # Add with metadata
 snip search "api helper"           # Semantic search
 snip run my-prompt -- language=TypeScript  # Run prompt template with variables
+snip exec git-diff-name-only-from-branch   # Use placeholder defaults inside command snippets
 snip copy my-snippet               # Copy to clipboard
 snip show my-snippet               # Display in terminal
 ```
@@ -155,7 +156,7 @@ async function apiRequest(url, options = {}) {
 ```
 ```
 
-The `related` field uses Obsidian-style wikilinks for cross-referencing. For prompts, set `type: prompts`, use `language: prompt` and optional `{{variable}}` placeholders in the body; use `snip run <name> -- var=value` to fill and run them.
+The `related` field uses Obsidian-style wikilinks for cross-referencing. For prompts, set `type: prompts`, use `language: prompt` and optional `{{variable}}` or `{{variable|default}}` placeholders in the body; use `snip run <name> -- var=value` to fill and run them. Command snippets executed with `snip exec` can use the same syntax for positional arguments with defaults.
 
 ## Integrations
 

@@ -128,11 +128,16 @@ Fill template variables in a snippet and copy the result.
 snip run my-template --var name=Widget --var count=5
 snip run my-template --no-copy            # Print only, don't copy
 snip run my-template --skip-vars          # Skip unfilled variables
+snip run my-template --var branch=main    # Overrides {{branch|master}}
 ```
 Options:
 - `--var` - Set a template variable (repeatable: `--var key=value`)
 - `--no-copy` - Print result to stdout without copying to clipboard
 - `--skip-vars` - Leave unfilled variables as-is
+
+Template syntax:
+- `{{name}}` - required variable
+- `{{name|default}}` - variable with a fallback value
 
 ### exec
 Execute a snippet as a script.
@@ -142,6 +147,7 @@ snip exec my-script -- arg1 arg2           # Pass arguments to the script
 snip exec my-script --shell python3        # Override interpreter
 snip exec my-script --dry-run             # Preview without executing
 snip exec my-script --dry-run -- a b      # Preview with args
+snip exec git-diff-name-only-from-branch  # Uses {{branch|master}} default
 ```
 Options:
 - `--shell` - Override the interpreter (e.g., `bash`, `python3`, `node`)
@@ -150,6 +156,7 @@ Options:
 Notes:
 - The interpreter is inferred from the snippet's language (e.g., `bash`, `python3`, `node`)
 - Arguments after `--` are passed as positional parameters to the script (`$1`, `$2`, …)
+- Template placeholders support `{{name}}` and `{{name|default}}`; defaults are used when args are omitted
 
 ## Cross-Linking
 

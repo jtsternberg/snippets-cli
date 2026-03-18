@@ -37,7 +37,7 @@ snip copy use-debounce-hook
 
 ## Running Prompt Templates
 
-Use snippets with `{{variable}}` placeholders as reusable templates.
+Use snippets with `{{variable}}` or `{{variable|default}}` placeholders as reusable templates.
 
 ```bash
 # Fill variables and copy result to clipboard
@@ -48,6 +48,9 @@ snip run email-template --var name=Alice --var topic="Q1 Review" --no-copy
 
 # Skip unfilled variables (leave placeholders intact)
 snip run complex-template --var name=Widget --skip-vars
+
+# Use defaults declared in the template
+snip run review-template --var must_provide=tests
 ```
 
 ## Executing Command Snippets
@@ -60,6 +63,9 @@ snip exec deploy-staging
 
 # Pass arguments (substituted into {{variables}} in order)
 snip exec git-diff-tree-show-changed-files -- abc123
+
+# Use fallback values declared in the snippet
+snip exec git-diff-name-only-from-branch
 
 # Preview before running
 snip exec deploy-prod --dry-run
