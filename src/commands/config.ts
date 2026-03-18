@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import {
+  assertLibraryExists,
   loadConfig,
   saveConfig,
   configExists,
@@ -73,12 +74,16 @@ export const configTypesAddCommand = new Command("config:types:add")
       return;
     }
 
+    // Validate library exists before attempting anything
+    const libPath = getLibraryPath(config);
+    assertLibraryExists(libPath);
+
+    // Create directory first — only save config if mkdir succeeds
+    const typeDir = resolve(libPath, name);
+    mkdirSync(typeDir, { recursive: true });
+
     config.types.push(name);
     saveConfig(config);
-
-    // Create the directory
-    const typeDir = resolve(getLibraryPath(config), name);
-    mkdirSync(typeDir, { recursive: true });
 
     console.log(`Added type "${name}" and created ${typeDir}/`);
   });
