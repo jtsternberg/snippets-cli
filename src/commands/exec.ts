@@ -34,8 +34,11 @@ export const execCommand = new Command("exec")
   .action((name: string, scriptArgs: string[], opts: { shell?: string; dryRun?: boolean }) => {
     const result = resolveSnippet(name);
 
-    if (!result) {
-      const fuzzy = getFuzzyMatches(name);
+    // Reject fuzzy matches for exec — a substring typo shouldn't run the wrong script
+    if (!result || result.matchType === "fuzzy") {
+      const fuzzy = result
+        ? [result.snippet]
+        : getFuzzyMatches(name);
       console.error(`Snippet "${name}" not found.`);
       if (fuzzy.length > 0) {
         console.error("\nDid you mean:");

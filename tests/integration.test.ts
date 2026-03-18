@@ -303,6 +303,40 @@ describe("snip exec with {{template}} variables", () => {
   });
 });
 
+describe("snip exec rejects fuzzy matches", () => {
+  beforeAll(() => {
+    snip([
+      "add",
+      "--title", "Fuzzy Exec Guard",
+      "--lang", "bash",
+      "--content", 'echo "executed"',
+    ]);
+  });
+
+  afterAll(() => {
+    snip(["rm", "fuzzy-exec-guard", "--force"]);
+  });
+
+  it("refuses to execute a fuzzy-only match and shows suggestion", () => {
+    // "fuzzy-exec" is a substring of "fuzzy-exec-guard" — fuzzy match only
+    let caught: { stderr?: string } | undefined;
+    try {
+      snip(["exec", "fuzzy-exec"]);
+    } catch (err: unknown) {
+      caught = err as { stderr: string };
+    }
+    expect(caught).toBeDefined();
+    expect(caught!.stderr).toContain('not found');
+    expect(caught!.stderr).toContain("Did you mean");
+    expect(caught!.stderr).toContain("fuzzy-exec-guard");
+  });
+
+  it("still executes exact slug matches", () => {
+    const output = snip(["exec", "fuzzy-exec-guard"]);
+    expect(output).toBe("executed");
+  });
+});
+
 describe("snip rename", () => {
   it("renames a snippet", () => {
     const output = snip(["rename", "test-snippet", "Renamed Snippet"]);
