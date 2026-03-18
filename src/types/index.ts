@@ -65,7 +65,7 @@ export interface SnipConfig {
 
 export interface ResolveResult {
   snippet: Snippet;
-  matchType: "exact" | "prefix" | "alias" | "fuzzy";
+  matchType: "exact" | "prefix" | "alias" | "fuzzy" | "picked";
 }
 
 export interface AmbiguousResult {

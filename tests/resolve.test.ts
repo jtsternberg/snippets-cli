@@ -124,7 +124,7 @@ describe("resolveSnippet", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null when multiple fuzzy matches (ambiguous)", () => {
+  it("resolves unique fuzzy match by slug substring", () => {
     const result = resolveSnippetLoose("build");
     // "build" appears in node-build-config slug — only one match
     expect(result).not.toBeNull();
@@ -156,7 +156,7 @@ describe("resolveSnippet", () => {
   it("resolveSnippetLoose picks first match for ambiguous slugs", () => {
     const result = resolveSnippetLoose("shared-name");
     expect(result).not.toBeNull();
-    expect(result!.matchType).toBe("exact");
+    expect(result!.matchType).toBe("picked");
     expect(result!.snippet.slug).toBe("shared-name");
   });
 

@@ -1,5 +1,5 @@
 import { readdirSync, existsSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, relative, basename, dirname, isAbsolute } from "node:path";
 import { parseSnippetFile } from "./frontmatter.js";
 import { getLibraryPath, loadConfig } from "./config.js";
 import type { Snippet, ResolveResult, AmbiguousResult } from "../types/index.js";
@@ -27,6 +27,12 @@ export function getAllSnippets(libraryPath?: string): Snippet[] {
   return snippets;
 }
 
+/** Check if filePath is safely inside parentDir (cross-platform). */
+function isInsideDir(parentDir: string, filePath: string): boolean {
+  const rel = relative(parentDir, filePath);
+  return !rel.startsWith("..") && !isAbsolute(rel);
+}
+
 export function resolveSnippet(name: string): ResolveResult | AmbiguousResult | null {
   const libPath = getLibraryPath();
   const config = loadConfig();
@@ -36,7 +42,7 @@ export function resolveSnippet(name: string): ResolveResult | AmbiguousResult | 
   // 1. Type-prefixed match: "prompts/code-review" — always unambiguous
   if (name.includes("/")) {
     const filePath = resolve(libPath, `${name}.md`);
-    if (filePath.startsWith(resolvedLibPath + "/") && existsSync(filePath)) {
+    if (isInsideDir(resolvedLibPath, filePath) && existsSync(filePath)) {
       return {
         snippet: parseSnippetFile(filePath),
         matchType: "prefix",
@@ -48,7 +54,7 @@ export function resolveSnippet(name: string): ResolveResult | AmbiguousResult | 
   const exactMatches: Snippet[] = [];
   for (const type of config.types) {
     const filePath = resolve(libPath, type, `${name}.md`);
-    if (filePath.startsWith(resolvedLibPath + "/") && existsSync(filePath)) {
+    if (isInsideDir(resolvedLibPath, filePath) && existsSync(filePath)) {
       exactMatches.push(parseSnippetFile(filePath));
     }
   }
@@ -92,8 +98,7 @@ export function resolveSnippet(name: string): ResolveResult | AmbiguousResult | 
  * Derived from the filePath by extracting the parent directory name + slug.
  */
 export function getSnippetPrefix(snippet: Snippet): string {
-  const parts = snippet.filePath.split("/");
-  const typeDir = parts[parts.length - 2]; // e.g. "prompts"
+  const typeDir = basename(dirname(snippet.filePath));
   return `${typeDir}/${snippet.slug}`;
 }
 
@@ -105,7 +110,7 @@ export function getSnippetPrefix(snippet: Snippet): string {
 export function resolveSnippetLoose(name: string): ResolveResult | null {
   const result = resolveSnippet(name);
   if (result?.matchType === "ambiguous") {
-    return { snippet: result.snippets[0], matchType: "exact" };
+    return { snippet: result.snippets[0], matchType: "picked" };
   }
   return result;
 }
