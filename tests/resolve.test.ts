@@ -83,7 +83,7 @@ describe("getAllSnippets", () => {
   });
 });
 
-describe("resolveSnippet", () => {
+describe("snippet resolution", () => {
   it("resolves by exact slug", () => {
     const result = resolveSnippetLoose("git-soft-reset");
     expect(result).not.toBeNull();
