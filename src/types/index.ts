@@ -68,6 +68,11 @@ export interface ResolveResult {
   matchType: "exact" | "prefix" | "alias" | "fuzzy";
 }
 
+export interface AmbiguousResult {
+  snippets: Snippet[];
+  matchType: "ambiguous";
+}
+
 export const EXIT_CODES = {
   SUCCESS: 0,
   GENERAL_ERROR: 1,

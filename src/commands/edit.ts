@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { spawnSync } from "node:child_process";
-import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose as resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { loadConfig } from "../lib/config.js";
 import { EXIT_CODES } from "../types/index.js";

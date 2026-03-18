@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { input } from "@inquirer/prompts";
-import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose as resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
 import { extractCodeBlocks } from "../lib/frontmatter.js";
 import { writeClipboard } from "../lib/clipboard.js";
 import { EXIT_CODES } from "../types/index.js";

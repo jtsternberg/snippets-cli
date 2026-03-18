@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { checkbox } from "@inquirer/prompts";
-import { resolveSnippet, getFuzzyMatches, getAllSnippets } from "../lib/resolve.js";
+import { resolveSnippetLoose as resolveSnippet, getFuzzyMatches, getAllSnippets } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { search as qmdSearch, ensureQmd } from "../lib/qmd.js";
 import { existsSync } from "node:fs";

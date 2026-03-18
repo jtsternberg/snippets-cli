@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose as resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
 import { EXIT_CODES, type Snippet } from "../types/index.js";
 import { readFileSync, writeFileSync, mkdtempSync, unlinkSync, rmdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";

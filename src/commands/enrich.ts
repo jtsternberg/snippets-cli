@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { renameSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose as resolveSnippet, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
 
 import { writeSnippetFile } from "../lib/frontmatter.js";
 import { uniqueSlug } from "../lib/slug.js";

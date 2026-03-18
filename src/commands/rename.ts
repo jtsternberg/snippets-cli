@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { renameSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { resolveSnippet, getFuzzyMatches, getAllSnippets } from "../lib/resolve.js";
+import { resolveSnippet, getFuzzyMatches, getSnippetPrefix, getAllSnippets } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { slugify } from "../lib/slug.js";
 import { loadConfig } from "../lib/config.js";
@@ -13,6 +13,15 @@ export const renameCommand = new Command("rename")
   .argument("<new-title>", "New title for the snippet")
   .action(async (oldName: string, newTitle: string) => {
     const result = resolveSnippet(oldName);
+
+    // Ambiguous: same slug exists in multiple type directories
+    if (result && result.matchType === "ambiguous") {
+      console.error(`Multiple snippets match "${oldName}". Use the full path:`);
+      for (const s of result.snippets) {
+        console.error(`  snip rename ${getSnippetPrefix(s)} "${newTitle}"`);
+      }
+      return process.exit(EXIT_CODES.NOT_FOUND);
+    }
 
     if (!result) {
       const fuzzy = getFuzzyMatches(oldName);

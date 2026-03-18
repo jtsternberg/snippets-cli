@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose as resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
 import { highlight } from "cli-highlight";

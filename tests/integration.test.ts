@@ -338,6 +338,69 @@ describe("snip exec rejects fuzzy matches", () => {
   });
 });
 
+describe("snip exec/rm/rename refuse ambiguous matches", () => {
+  beforeAll(() => {
+    // Create same-slug snippet in both type directories
+    writeFileSync(
+      resolve(libDir, "snippets", "ambiguous-test.md"),
+      `---\ntitle: Ambiguous Snippets\nlanguage: bash\n---\necho "from snippets"`,
+    );
+    writeFileSync(
+      resolve(libDir, "prompts", "ambiguous-test.md"),
+      `---\ntitle: Ambiguous Prompts\nlanguage: bash\n---\necho "from prompts"`,
+    );
+  });
+
+  afterAll(() => {
+    try { snip(["rm", "snippets/ambiguous-test", "--force"]); } catch {}
+    try { snip(["rm", "prompts/ambiguous-test", "--force"]); } catch {}
+  });
+
+  it("exec refuses ambiguous slug and shows type-prefixed commands", () => {
+    let caught: { stderr?: string } | undefined;
+    try {
+      snip(["exec", "ambiguous-test"]);
+    } catch (err: unknown) {
+      caught = err as { stderr: string };
+    }
+    expect(caught).toBeDefined();
+    expect(caught!.stderr).toContain("Multiple snippets match");
+    expect(caught!.stderr).toContain("snip exec snippets/ambiguous-test");
+    expect(caught!.stderr).toContain("snip exec prompts/ambiguous-test");
+  });
+
+  it("exec succeeds with type-prefixed path", () => {
+    const output = snip(["exec", "snippets/ambiguous-test"]);
+    expect(output).toBe("from snippets");
+  });
+
+  it("rm refuses ambiguous slug", () => {
+    let caught: { stderr?: string } | undefined;
+    try {
+      snip(["rm", "ambiguous-test", "--force"]);
+    } catch (err: unknown) {
+      caught = err as { stderr: string };
+    }
+    expect(caught).toBeDefined();
+    expect(caught!.stderr).toContain("Multiple snippets match");
+    expect(caught!.stderr).toContain("snip rm snippets/ambiguous-test");
+    expect(caught!.stderr).toContain("snip rm prompts/ambiguous-test");
+  });
+
+  it("rename refuses ambiguous slug", () => {
+    let caught: { stderr?: string } | undefined;
+    try {
+      snip(["rename", "ambiguous-test", "New Name"]);
+    } catch (err: unknown) {
+      caught = err as { stderr: string };
+    }
+    expect(caught).toBeDefined();
+    expect(caught!.stderr).toContain("Multiple snippets match");
+    expect(caught!.stderr).toContain("snip rename snippets/ambiguous-test");
+    expect(caught!.stderr).toContain("snip rename prompts/ambiguous-test");
+  });
+});
+
 describe("snip rename", () => {
   it("renames a snippet", () => {
     const output = snip(["rename", "test-snippet", "Renamed Snippet"]);

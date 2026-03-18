@@ -2,7 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { resolveSnippet, getAllSnippets, getFuzzyMatches } from "../src/lib/resolve.js";
+import { resolveSnippet, resolveSnippetLoose, getAllSnippets, getFuzzyMatches, getSnippetPrefix } from "../src/lib/resolve.js";
+import type { AmbiguousResult } from "../src/types/index.js";
 import { serializeSnippet } from "../src/lib/frontmatter.js";
 
 // Create a temp snippet library for testing
@@ -58,6 +59,10 @@ beforeAll(() => {
     tags: ["ai"],
     aliases: ["review"],
   });
+
+  // Same slug in both directories — for ambiguity tests
+  writeTestSnippet(snippetsDir, "shared-name", { title: "Shared Snippets" });
+  writeTestSnippet(promptsDir, "shared-name", { title: "Shared Prompts" });
 });
 
 afterAll(() => {
@@ -68,47 +73,47 @@ afterAll(() => {
 describe("getAllSnippets", () => {
   it("returns all snippets from all type directories", () => {
     const all = getAllSnippets(testDir);
-    expect(all.length).toBe(4);
+    expect(all.length).toBe(6);
   });
 
   it("parses slugs from filenames", () => {
     const all = getAllSnippets(testDir);
     const slugs = all.map((s) => s.slug).sort();
-    expect(slugs).toEqual(["code-review", "docker-ps", "git-soft-reset", "node-build-config"]);
+    expect(slugs).toEqual(["code-review", "docker-ps", "git-soft-reset", "node-build-config", "shared-name", "shared-name"]);
   });
 });
 
 describe("resolveSnippet", () => {
   it("resolves by exact slug", () => {
-    const result = resolveSnippet("git-soft-reset");
+    const result = resolveSnippetLoose("git-soft-reset");
     expect(result).not.toBeNull();
     expect(result!.matchType).toBe("exact");
     expect(result!.snippet.slug).toBe("git-soft-reset");
   });
 
   it("resolves by type-prefixed path", () => {
-    const result = resolveSnippet("prompts/code-review");
+    const result = resolveSnippetLoose("prompts/code-review");
     expect(result).not.toBeNull();
     expect(result!.matchType).toBe("prefix");
     expect(result!.snippet.slug).toBe("code-review");
   });
 
   it("resolves by alias (case-insensitive)", () => {
-    const result = resolveSnippet("soft-reset");
+    const result = resolveSnippetLoose("soft-reset");
     expect(result).not.toBeNull();
     expect(result!.matchType).toBe("alias");
     expect(result!.snippet.slug).toBe("git-soft-reset");
   });
 
   it("resolves alias case-insensitively", () => {
-    const result = resolveSnippet("Undo-Commit");
+    const result = resolveSnippetLoose("Undo-Commit");
     expect(result).not.toBeNull();
     expect(result!.matchType).toBe("alias");
     expect(result!.snippet.slug).toBe("git-soft-reset");
   });
 
   it("resolves by fuzzy match when only one candidate", () => {
-    const result = resolveSnippet("docker");
+    const result = resolveSnippetLoose("docker");
     expect(result).not.toBeNull();
     expect(result!.matchType).toBe("fuzzy");
     expect(result!.snippet.slug).toBe("docker-ps");
@@ -120,25 +125,45 @@ describe("resolveSnippet", () => {
   });
 
   it("returns null when multiple fuzzy matches (ambiguous)", () => {
-    // "git" matches git-soft-reset slug, and could also match others via title
-    // But let's test with something truly ambiguous — "node" matches node-build-config
-    // and "build" appears in node-build-config only, so that's unique
-    const result = resolveSnippet("build");
+    const result = resolveSnippetLoose("build");
     // "build" appears in node-build-config slug — only one match
     expect(result).not.toBeNull();
     expect(result!.matchType).toBe("fuzzy");
   });
 
   it("prefers exact match over alias", () => {
-    const result = resolveSnippet("code-review");
+    const result = resolveSnippetLoose("code-review");
     expect(result).not.toBeNull();
     expect(result!.matchType).toBe("exact");
   });
 
   it("prefers exact match over fuzzy", () => {
-    const result = resolveSnippet("docker-ps");
+    const result = resolveSnippetLoose("docker-ps");
     expect(result).not.toBeNull();
     expect(result!.matchType).toBe("exact");
+  });
+
+  it("returns ambiguous when same slug exists in multiple type directories", () => {
+    const result = resolveSnippet("shared-name");
+    expect(result).not.toBeNull();
+    expect(result!.matchType).toBe("ambiguous");
+    const ambiguous = result as AmbiguousResult;
+    expect(ambiguous.snippets).toHaveLength(2);
+    const prefixes = ambiguous.snippets.map(getSnippetPrefix).sort();
+    expect(prefixes).toEqual(["prompts/shared-name", "snippets/shared-name"]);
+  });
+
+  it("resolveSnippetLoose picks first match for ambiguous slugs", () => {
+    const result = resolveSnippetLoose("shared-name");
+    expect(result).not.toBeNull();
+    expect(result!.matchType).toBe("exact");
+    expect(result!.snippet.slug).toBe("shared-name");
+  });
+
+  it("type-prefixed path resolves unambiguously even with duplicate slugs", () => {
+    const result = resolveSnippet("prompts/shared-name");
+    expect(result).not.toBeNull();
+    expect(result!.matchType).toBe("prefix");
   });
 });
 
