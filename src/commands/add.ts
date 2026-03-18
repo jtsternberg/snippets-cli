@@ -20,6 +20,7 @@ import { writeFileSync, readFileSync, unlinkSync } from "node:fs";
 
 export const addCommand = new Command("add")
   .description("Add a new snippet")
+  .argument("[content]", "Snippet content (shorthand for --content)")
   .option("-t, --type <type>", "Snippet type (directory)")
   .option("-l, --lang <language>", "Programming language")
   .option("--tags <tags>", "Comma-separated tags")
@@ -28,7 +29,11 @@ export const addCommand = new Command("add")
   .option("--content <content>", "Snippet content (non-interactive)")
   .option("--provider <provider>", "LLM provider override (ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto)")
   .option("--debug", "Log LLM provider commands and responses")
-  .action(async (opts) => {
+  .action(async (contentArg, opts) => {
+    // Support positional content arg as shorthand for --content
+    if (contentArg && !opts.content) {
+      opts.content = contentArg;
+    }
     if (opts.debug) setDebugMode(true);
     if (opts.provider) {
       if (!isValidProvider(opts.provider)) {
