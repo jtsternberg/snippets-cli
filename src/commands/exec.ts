@@ -27,7 +27,7 @@ const LANG_CONFIG: Record<string, { shell: string; ext: string }> = {
 
 export const execCommand = new Command("exec")
   .description("Execute a snippet as a script")
-  .argument("<name>", "Snippet name or slug")
+  .argument("<name>", "Snippet slug, type-prefix, or alias (fuzzy/title matches are rejected)")
   .argument("[scriptArgs...]", "Arguments to pass to the script")
   .option("--shell <shell>", "Override interpreter (e.g., bash, python3, node)")
   .option("--dry-run", "Print the command without executing")
