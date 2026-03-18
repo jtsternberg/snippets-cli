@@ -327,6 +327,7 @@ describe("snip exec rejects fuzzy matches", () => {
     }
     expect(caught).toBeDefined();
     expect(caught!.stderr).toContain('not found');
+    expect(caught!.stderr).toContain('Refusing to execute fuzzy match');
     expect(caught!.stderr).toContain("Did you mean");
     expect(caught!.stderr).toContain("fuzzy-exec-guard");
   });

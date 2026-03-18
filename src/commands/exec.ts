@@ -39,12 +39,14 @@ export const execCommand = new Command("exec")
       const fuzzy = result
         ? [result.snippet]
         : getFuzzyMatches(name);
-      console.error(`Snippet "${name}" not found.`);
       if (fuzzy.length > 0) {
+        console.error(`Snippet "${name}" not found. Refusing to execute fuzzy match.`);
         console.error("\nDid you mean:");
         for (const s of fuzzy.slice(0, 5)) {
           console.error(`  ${s.slug} — ${s.frontmatter.title}`);
         }
+      } else {
+        console.error(`Snippet "${name}" not found.`);
       }
       process.exit(EXIT_CODES.NOT_FOUND);
     }
