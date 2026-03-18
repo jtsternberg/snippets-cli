@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { resolveSnippetLoose as resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose, getFuzzyMatches } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { writeClipboard } from "../lib/clipboard.js";
 import { EXIT_CODES } from "../types/index.js";
@@ -8,7 +8,7 @@ export const copyCommand = new Command("copy")
   .description("Copy snippet content to clipboard")
   .argument("<name>", "Snippet name or slug")
   .action(async (name: string) => {
-    const result = resolveSnippet(name);
+    const result = resolveSnippetLoose(name);
 
     if (!result) {
       const fuzzy = getFuzzyMatches(name);

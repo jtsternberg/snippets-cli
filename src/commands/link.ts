@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { checkbox } from "@inquirer/prompts";
-import { resolveSnippetLoose as resolveSnippet, getFuzzyMatches, getAllSnippets } from "../lib/resolve.js";
+import { resolveSnippetLoose, getFuzzyMatches, getAllSnippets } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { search as qmdSearch, ensureQmd } from "../lib/qmd.js";
 import { existsSync } from "node:fs";
@@ -13,7 +13,7 @@ export const linkCommand = new Command("link")
   .option("-n, --max <number>", "Maximum suggestions", "5")
   .option("--auto", "Automatically add all suggestions without prompting")
   .action(async (name: string, opts: { max?: string; auto?: boolean }) => {
-    const result = resolveSnippet(name);
+    const result = resolveSnippetLoose(name);
 
     if (!result) {
       const fuzzy = getFuzzyMatches(name);

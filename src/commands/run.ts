@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { input } from "@inquirer/prompts";
-import { resolveSnippetLoose as resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose, getFuzzyMatches } from "../lib/resolve.js";
 import { extractCodeBlocks } from "../lib/frontmatter.js";
 import { writeClipboard } from "../lib/clipboard.js";
 import { EXIT_CODES } from "../types/index.js";
@@ -12,7 +12,7 @@ export const runCommand = new Command("run")
   .option("--no-copy", "Don't copy to clipboard, only print to stdout")
   .option("--skip-vars", "Leave unfilled variables as {{name}} without prompting")
   .action(async (name: string, opts: { var?: string[]; copy?: boolean; skipVars?: boolean }) => {
-    const result = resolveSnippet(name);
+    const result = resolveSnippetLoose(name);
 
     if (!result) {
       const fuzzy = getFuzzyMatches(name);

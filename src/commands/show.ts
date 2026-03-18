@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { resolveSnippetLoose as resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose, getFuzzyMatches } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
 import { highlight } from "cli-highlight";
@@ -11,7 +11,7 @@ export const showCommand = new Command("show")
   .option("--raw", "Output full file contents (frontmatter + body)")
   .option("--code", "Output only the code block content (no fences)")
   .action(async (name: string, opts: { raw?: boolean; code?: boolean }) => {
-    const result = resolveSnippet(name);
+    const result = resolveSnippetLoose(name);
 
     if (!result) {
       const fuzzy = getFuzzyMatches(name);

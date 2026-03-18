@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { spawnSync } from "node:child_process";
-import { resolveSnippetLoose as resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose, getFuzzyMatches } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { loadConfig } from "../lib/config.js";
 import { EXIT_CODES } from "../types/index.js";
@@ -10,7 +10,7 @@ export const editCommand = new Command("edit")
   .description("Open a snippet in your editor")
   .argument("<name>", "Snippet name or slug")
   .action(async (name: string) => {
-    const result = resolveSnippet(name);
+    const result = resolveSnippetLoose(name);
 
     if (!result) {
       const fuzzy = getFuzzyMatches(name);
