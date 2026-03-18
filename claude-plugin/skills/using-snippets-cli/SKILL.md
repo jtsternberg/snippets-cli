@@ -67,6 +67,9 @@ The `--type` flag on `snip add` determines where a snippet is stored and how it 
 **User reports snip errors**:
 → Run `snip doctor` first. See troubleshooting-snippets skill for detailed diagnosis.
 
+**Library path is wrong or inaccessible**:
+→ `snip config:library ~/snippets` — set the library path (creates it with `snip init` if needed)
+
 ## Agent Guidelines
 
 ### Use `--help` liberally
@@ -79,7 +82,7 @@ These commands prompt for input without flags — agents MUST provide them:
 
 | Command | Required flags | Why |
 |---------|---------------|-----|
-| `snip add` | `--title` and (`--content` or `--from-clipboard`) | Bare `snip add` opens interactive mode |
+| `snip add` | `--title` and (`--content`, positional arg, or `--from-clipboard`) | Bare `snip add` opens interactive mode |
 | `snip rm` | `--force` | Prompts for confirmation without it |
 | `snip link` | `--auto` | Interactive selection without it |
 | `snip upgrade` | `--yes` | Prompts for confirmation without it |
