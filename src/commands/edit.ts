@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { spawnSync } from "node:child_process";
-import { resolveSnippetLoose, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose, exitIfNotFound } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { loadConfig } from "../lib/config.js";
 import { EXIT_CODES } from "../types/index.js";
@@ -12,17 +12,7 @@ export const editCommand = new Command("edit")
   .action(async (name: string) => {
     const result = resolveSnippetLoose(name);
 
-    if (!result) {
-      const fuzzy = getFuzzyMatches(name);
-      console.error(`Snippet "${name}" not found.`);
-      if (fuzzy.length > 0) {
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfNotFound(result, name);
 
     const config = loadConfig();
     const editor = config.editor || process.env.EDITOR || "vi";

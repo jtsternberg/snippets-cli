@@ -136,6 +136,27 @@ export function exitIfAmbiguous(
   }
 }
 
+/**
+ * If the result is null, print "not found" with fuzzy suggestions and exit.
+ * Uses TypeScript assertion to narrow away null for callers.
+ */
+export function exitIfNotFound(
+  result: ResolveResult | null,
+  name: string,
+): asserts result is ResolveResult {
+  if (!result) {
+    const fuzzy = getFuzzyMatches(name);
+    console.error(`Snippet "${name}" not found.`);
+    if (fuzzy.length > 0) {
+      console.error("\nDid you mean:");
+      for (const s of fuzzy.slice(0, 5)) {
+        console.error(`  ${s.slug} — ${s.frontmatter.title}`);
+      }
+    }
+    process.exit(EXIT_CODES.NOT_FOUND);
+  }
+}
+
 export function getFuzzyMatches(name: string): Snippet[] {
   const allSnippets = getAllSnippets();
   return allSnippets.filter(

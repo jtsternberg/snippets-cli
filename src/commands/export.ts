@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { resolveSnippetLoose, getAllSnippets, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose, getAllSnippets, exitIfNotFound } from "../lib/resolve.js";
 import { EXIT_CODES, type Snippet } from "../types/index.js";
 import { readFileSync, writeFileSync, mkdtempSync, unlinkSync, rmdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -71,17 +71,7 @@ function resolveSnippetsToExport(
 ): Snippet[] {
   if (name) {
     const result = resolveSnippetLoose(name);
-    if (!result) {
-      const fuzzy = getFuzzyMatches(name);
-      console.error(`Snippet "${name}" not found.`);
-      if (fuzzy.length > 0) {
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfNotFound(result, name);
     return [result.snippet];
   }
 

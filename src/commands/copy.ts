@@ -1,8 +1,7 @@
 import { Command } from "commander";
-import { resolveSnippetLoose, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose, exitIfNotFound } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { writeClipboard } from "../lib/clipboard.js";
-import { EXIT_CODES } from "../types/index.js";
 
 export const copyCommand = new Command("copy")
   .description("Copy snippet content to clipboard")
@@ -10,17 +9,7 @@ export const copyCommand = new Command("copy")
   .action(async (name: string) => {
     const result = resolveSnippetLoose(name);
 
-    if (!result) {
-      const fuzzy = getFuzzyMatches(name);
-      console.error(`Snippet "${name}" not found.`);
-      if (fuzzy.length > 0) {
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfNotFound(result, name);
 
     const content = extractCopyContent(result.snippet);
     await writeClipboard(content);

@@ -1,8 +1,7 @@
 import { Command } from "commander";
 import { unlinkSync } from "node:fs";
 import { confirm } from "@inquirer/prompts";
-import { resolveSnippet, getFuzzyMatches, exitIfAmbiguous, getAllSnippets } from "../lib/resolve.js";
-import { EXIT_CODES } from "../types/index.js";
+import { resolveSnippet, exitIfAmbiguous, exitIfNotFound, getAllSnippets } from "../lib/resolve.js";
 import { update as qmdUpdate } from "../lib/qmd.js";
 
 export const rmCommand = new Command("rm")
@@ -14,17 +13,7 @@ export const rmCommand = new Command("rm")
 
     exitIfAmbiguous(result, name, "rm");
 
-    if (!result) {
-      const fuzzy = getFuzzyMatches(name);
-      console.error(`Snippet "${name}" not found.`);
-      if (fuzzy.length > 0) {
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfNotFound(result, name);
 
     const { snippet } = result;
 

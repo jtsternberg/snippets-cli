@@ -1,10 +1,9 @@
 import { Command } from "commander";
 import { checkbox } from "@inquirer/prompts";
-import { resolveSnippetLoose, getFuzzyMatches, getAllSnippets } from "../lib/resolve.js";
+import { resolveSnippetLoose, exitIfNotFound, getAllSnippets } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { search as qmdSearch, ensureQmd } from "../lib/qmd.js";
 import { existsSync } from "node:fs";
-import { EXIT_CODES } from "../types/index.js";
 import type { Snippet } from "../types/index.js";
 
 export const linkCommand = new Command("link")
@@ -15,17 +14,7 @@ export const linkCommand = new Command("link")
   .action(async (name: string, opts: { max?: string; auto?: boolean }) => {
     const result = resolveSnippetLoose(name);
 
-    if (!result) {
-      const fuzzy = getFuzzyMatches(name);
-      console.error(`Snippet "${name}" not found.`);
-      if (fuzzy.length > 0) {
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfNotFound(result, name);
 
     const { snippet } = result;
     const maxResults = parseInt(opts.max || "5", 10);
