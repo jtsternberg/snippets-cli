@@ -81,12 +81,7 @@ export function resolveSnippet(name: string): ResolveResult | AmbiguousResult | 
   }
 
   // 4. Fuzzy match — find candidates whose slug contains the search term
-  const fuzzyMatches = allSnippets.filter(
-    (s) =>
-      s.slug.includes(name.toLowerCase()) ||
-      s.frontmatter.title.toLowerCase().includes(name.toLowerCase()),
-  );
-
+  const fuzzyMatches = fuzzyFilter(allSnippets, name);
   if (fuzzyMatches.length === 1) {
     return { snippet: fuzzyMatches[0], matchType: "fuzzy" };
   }
@@ -157,11 +152,15 @@ export function exitIfNotFound(
   }
 }
 
-export function getFuzzyMatches(name: string): Snippet[] {
-  const allSnippets = getAllSnippets();
-  return allSnippets.filter(
+function fuzzyFilter(snippets: Snippet[], name: string): Snippet[] {
+  const lower = name.toLowerCase();
+  return snippets.filter(
     (s) =>
-      s.slug.includes(name.toLowerCase()) ||
-      s.frontmatter.title.toLowerCase().includes(name.toLowerCase()),
+      s.slug.includes(lower) ||
+      s.frontmatter.title.toLowerCase().includes(lower),
   );
+}
+
+export function getFuzzyMatches(name: string): Snippet[] {
+  return fuzzyFilter(getAllSnippets(), name);
 }
