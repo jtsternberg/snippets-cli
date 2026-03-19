@@ -72,6 +72,13 @@ describe("template variable extraction", () => {
     );
   });
 
+  it("applies default from any occurrence to bare occurrences of the same variable", () => {
+    const template = "Hello {{name}}, welcome back {{name|friend}}.";
+    expect(fillTemplateVariables(template, new Map())).toBe(
+      "Hello friend, welcome back friend.",
+    );
+  });
+
   it("treats empty default as empty string", () => {
     const template = "Hello {{name|}} world";
     expect(fillTemplateVariables(template, new Map())).toBe("Hello  world");

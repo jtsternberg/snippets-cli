@@ -34,6 +34,16 @@ export function fillTemplateVariables(
   template: string,
   values: Map<string, string>,
 ): string {
+  // Build a per-variable defaults map so that if *any* occurrence of a
+  // variable specifies a default (e.g. {{name|fallback}}), bare
+  // occurrences ({{name}}) also resolve instead of being left as-is.
+  const variableDefaults = new Map<string, string>();
+  for (const v of extractTemplateVariables(template)) {
+    if (v.defaultValue !== undefined) {
+      variableDefaults.set(v.name, v.defaultValue);
+    }
+  }
+
   return template.replaceAll(TEMPLATE_VARIABLE_REGEX, (placeholder, name: string, defaultValue?: string) => {
     if (values.has(name)) {
       return values.get(name) ?? "";
@@ -42,6 +52,11 @@ export function fillTemplateVariables(
     const normalizedDefault = normalizeDefaultValue(defaultValue);
     if (normalizedDefault !== undefined) {
       return normalizedDefault;
+    }
+
+    // Fall back to a default defined on another occurrence of this variable
+    if (variableDefaults.has(name)) {
+      return variableDefaults.get(name)!;
     }
 
     return placeholder;
