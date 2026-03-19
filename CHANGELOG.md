@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-19
+
+### Added
+
+- `feat(template)`: default placeholder values — `{{name|default}}` syntax for template variables
+- `feat(resolve)`: disambiguate when same slug exists in multiple type directories
+- `feat`: `config:types:remove <name>` subcommand to unregister snippet types
+- `feat`: `config:library <path>` subcommand to set the library path
+- `feat(exec)`: substitute `{{template}}` variables with positional args
+
+### Changed
+
+- `refactor(resolve)`: extracted `exitIfNotFound`, `exitIfAmbiguous`, and `fuzzyFilter` helpers to DRY up resolve logic
+- `refactor`: dropped import aliasing — use `resolveSnippetLoose` by name
+
+### Fixed
+
+- `fix(template)`: apply variable-level defaults to all occurrences of a placeholder
+- `fix(template)`: reset `lastIndex` on global regex for defensive hardening
+- `fix(resolve)`: reject fuzzy matches in `rm` and `rename` commands
+- `fix(exec)`: reject fuzzy name matches to prevent accidental execution
+- `fix(exec)`: clarify error message for fuzzy match rejection
+- `fix`: validate `libraryPath` at startup via `preAction` hook
+- `fix(config:types:add)`: make operation atomic — mkdir before saving config
+- `fix`: clear error message when `libraryPath` is wrong or missing
+- `fix(add)`: accept positional content arg as shorthand for `--content`
+- `fix`: validate `--type` against registered types before creating files
+- `fix(plugin)`: use object instead of array for hooks config
+- `fix(docs)`: correct `snip run --var` usage example in README
+
 ## [1.1.0] - 2026-03-12
 
 ### Added
