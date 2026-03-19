@@ -303,6 +303,69 @@ describe("snip exec with {{template}} variables", () => {
   });
 });
 
+describe("snip exec with default template variables", () => {
+  beforeAll(() => {
+    snip([
+      "add",
+      "--title", "Template Exec Defaults Test",
+      "--lang", "bash",
+      "--content", 'echo "branch={{branch|master}} path={{path|src}} extra=$1"',
+    ]);
+  });
+
+  afterAll(() => {
+    snip(["rm", "template-exec-defaults-test", "--force"]);
+  });
+
+  it("uses default values when args are omitted", () => {
+    const output = snip(["exec", "template-exec-defaults-test"]);
+    expect(output).toBe("branch=master path=src extra=");
+  });
+
+  it("uses provided args before falling back to defaults", () => {
+    const output = snip(["exec", "template-exec-defaults-test", "--", "main"]);
+    expect(output).toBe("branch=main path=src extra=");
+  });
+
+  it("passes through remaining args after filling defaults", () => {
+    const output = snip(["exec", "template-exec-defaults-test", "--", "main", "packages", "tail"]);
+    expect(output).toBe("branch=main path=packages extra=tail");
+  });
+});
+
+describe("snip run with default template variables", () => {
+  beforeAll(() => {
+    snip([
+      "add",
+      "--title", "Template Run Defaults Test",
+      "--lang", "prompt",
+      "--type", "prompts",
+      "--content", "Review {{language|TypeScript}} with focus on {{focus|correctness}} and {{must_provide}}.",
+    ]);
+  });
+
+  afterAll(() => {
+    snip(["rm", "template-run-defaults-test", "--force"]);
+  });
+
+  it("uses defaults for missing --var values", () => {
+    const output = snip(["run", "template-run-defaults-test", "--no-copy", "--var", "must_provide=edge-cases"]);
+    expect(output).toBe("Review TypeScript with focus on correctness and edge-cases.");
+  });
+
+  it("lets provided --var values override defaults", () => {
+    const output = snip([
+      "run",
+      "template-run-defaults-test",
+      "--no-copy",
+      "--var", "language=Ruby",
+      "--var", "focus=maintainability",
+      "--var", "must_provide=tests",
+    ]);
+    expect(output).toBe("Review Ruby with focus on maintainability and tests.");
+  });
+});
+
 describe("snip exec rejects fuzzy matches", () => {
   beforeAll(() => {
     snip([

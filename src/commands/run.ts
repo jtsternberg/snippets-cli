@@ -3,6 +3,7 @@ import { input } from "@inquirer/prompts";
 import { resolveSnippetLoose, exitIfNotFound } from "../lib/resolve.js";
 import { extractCodeBlocks } from "../lib/frontmatter.js";
 import { writeClipboard } from "../lib/clipboard.js";
+import { extractTemplateVariables, fillTemplateVariables } from "../lib/template.js";
 import { EXIT_CODES } from "../types/index.js";
 
 export const runCommand = new Command("run")
@@ -27,15 +28,12 @@ export const runCommand = new Command("run")
       template = snippet.body;
     }
 
-    // Find all {{variable}} placeholders
-    const variableRegex = /\{\{(\w+)\}\}/g;
-    const requiredVars = new Set<string>();
-    let match;
-    while ((match = variableRegex.exec(template)) !== null) {
-      requiredVars.add(match[1]);
-    }
+    const templateVariables = extractTemplateVariables(template);
+    const requiredVars = templateVariables
+      .filter((variable) => variable.defaultValue === undefined)
+      .map((variable) => variable.name);
 
-    if (requiredVars.size === 0) {
+    if (templateVariables.length === 0) {
       // No variables — just copy the content
       if (opts.copy !== false) {
         await writeClipboard(template);
@@ -61,7 +59,7 @@ export const runCommand = new Command("run")
     }
 
     // Check for missing variables
-    const missingVars = [...requiredVars].filter((v) => !providedVars.has(v));
+    const missingVars = requiredVars.filter((v) => !providedVars.has(v));
 
     if (missingVars.length > 0 && !opts.skipVars) {
       // Interactive mode: prompt for missing variables if TTY
@@ -82,10 +80,7 @@ export const runCommand = new Command("run")
     }
 
     // Fill template
-    let filled = template;
-    for (const [key, value] of providedVars) {
-      filled = filled.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
-    }
+    const filled = fillTemplateVariables(template, providedVars);
 
     // Output
     if (opts.copy !== false) {
