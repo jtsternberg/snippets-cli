@@ -156,7 +156,7 @@ async function apiRequest(url, options = {}) {
 ```
 ```
 
-The `related` field uses Obsidian-style wikilinks for cross-referencing. For prompts, set `type: prompts`, use `language: prompt` and optional `{{variable}}` or `{{variable|default}}` placeholders in the body; use `snip run <name> -- var=value` to fill and run them. Command snippets executed with `snip exec` can use the same syntax for positional arguments with defaults.
+The `related` field uses Obsidian-style wikilinks for cross-referencing. For prompts, set `type: prompts`, use `language: prompt` and optional `{{variable}}` or `{{variable|default}}` placeholders in the body; use `snip run <name> --var key=value` to fill and run them. Command snippets executed with `snip exec` can use the same syntax for positional arguments with defaults.
 
 ## Integrations
 
