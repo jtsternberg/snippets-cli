@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { homedir } from "node:os";
 import {
   configExists,
@@ -42,6 +42,44 @@ export const initCommand = new Command("init")
       writeFileSync(
         gitignorePath,
         [".qmd/", ".DS_Store", ".obsidian/workspace.json", ""].join("\n"),
+        "utf-8",
+      );
+    }
+
+    // Write README.md for the library
+    const readmePath = resolve(libraryPath, "README.md");
+    if (!existsSync(readmePath)) {
+      const libName = basename(libraryPath);
+      const typeDirs = config.types.map((t) => `- \`${t}/\``).join("\n");
+      writeFileSync(
+        readmePath,
+        [
+          `# ${libName}`,
+          "",
+          `A snippet library managed by [snip](https://github.com/jtsternberg/snippets-cli).`,
+          "",
+          "## Structure",
+          "",
+          typeDirs,
+          "",
+          "## Usage",
+          "",
+          "```bash",
+          "# Add a snippet",
+          "snip add my-snippet",
+          "",
+          "# Search snippets",
+          "snip search <query>",
+          "",
+          "# Copy a snippet to clipboard",
+          "snip copy <slug>",
+          "```",
+          "",
+          "## Obsidian",
+          "",
+          "This library is compatible with [Obsidian](https://obsidian.md) — open this directory as a vault for visual browsing.",
+          "",
+        ].join("\n"),
         "utf-8",
       );
     }
