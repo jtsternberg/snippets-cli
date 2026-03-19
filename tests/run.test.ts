@@ -71,6 +71,14 @@ describe("template variable extraction", () => {
       "Compare master against src.",
     );
   });
+
+  it("treats empty default as empty string", () => {
+    const template = "Hello {{name|}} world";
+    expect(fillTemplateVariables(template, new Map())).toBe("Hello  world");
+    expect(extractTemplateVariables(template)).toEqual([
+      { name: "name", defaultValue: "" },
+    ]);
+  });
 });
 
 describe("extractCodeBlocks for templates", () => {
