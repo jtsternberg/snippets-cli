@@ -6,6 +6,7 @@ export interface TemplateVariable {
 const TEMPLATE_VARIABLE_REGEX = /\{\{\s*\$?(\w+)(?:\|([^}]*?))?\s*\}\}/g;
 
 export function extractTemplateVariables(template: string): TemplateVariable[] {
+  TEMPLATE_VARIABLE_REGEX.lastIndex = 0;
   const variables = new Map<string, TemplateVariable>();
   let match: RegExpExecArray | null;
 
