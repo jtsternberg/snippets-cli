@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippet, exitIfAmbiguous, exitIfFuzzy, exitIfNotFound } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
 import { EXIT_CODES } from "../types/index.js";
 import { fmt } from "../lib/format.js";
@@ -27,24 +27,16 @@ const LANG_CONFIG: Record<string, { shell: string; ext: string }> = {
 
 export const execCommand = new Command("exec")
   .description("Execute a snippet as a script")
-  .argument("<name>", "Snippet name or slug")
+  .argument("<name>", "Snippet slug, type-prefix, or alias (fuzzy/title matches are rejected)")
   .argument("[scriptArgs...]", "Arguments to pass to the script")
   .option("--shell <shell>", "Override interpreter (e.g., bash, python3, node)")
   .option("--dry-run", "Print the command without executing")
   .action((name: string, scriptArgs: string[], opts: { shell?: string; dryRun?: boolean }) => {
     const result = resolveSnippet(name);
 
-    if (!result) {
-      const fuzzy = getFuzzyMatches(name);
-      console.error(`Snippet "${name}" not found.`);
-      if (fuzzy.length > 0) {
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfAmbiguous(result, name, "exec");
+    exitIfFuzzy(result, name);
+    exitIfNotFound(result, name);
 
     const { snippet } = result;
     let code = extractCopyContent(snippet);

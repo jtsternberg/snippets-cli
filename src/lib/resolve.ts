@@ -1,8 +1,9 @@
 import { readdirSync, existsSync } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, relative, basename, dirname, isAbsolute } from "node:path";
 import { parseSnippetFile } from "./frontmatter.js";
 import { getLibraryPath, loadConfig } from "./config.js";
-import type { Snippet, ResolveResult } from "../types/index.js";
+import type { Snippet, ResolveResult, AmbiguousResult } from "../types/index.js";
+import { EXIT_CODES } from "../types/index.js";
 
 export function getAllSnippets(libraryPath?: string): Snippet[] {
   const libPath = libraryPath || getLibraryPath();
@@ -27,16 +28,22 @@ export function getAllSnippets(libraryPath?: string): Snippet[] {
   return snippets;
 }
 
-export function resolveSnippet(name: string): ResolveResult | null {
+/** Check if filePath is safely inside parentDir (cross-platform). */
+function isInsideDir(parentDir: string, filePath: string): boolean {
+  const rel = relative(parentDir, filePath);
+  return !rel.startsWith("..") && !isAbsolute(rel);
+}
+
+export function resolveSnippet(name: string): ResolveResult | AmbiguousResult | null {
   const libPath = getLibraryPath();
   const config = loadConfig();
 
   const resolvedLibPath = resolve(libPath);
 
-  // 1. Type-prefixed match: "prompts/code-review"
+  // 1. Type-prefixed match: "prompts/code-review" — always unambiguous
   if (name.includes("/")) {
     const filePath = resolve(libPath, `${name}.md`);
-    if (filePath.startsWith(resolvedLibPath + "/") && existsSync(filePath)) {
+    if (isInsideDir(resolvedLibPath, filePath) && existsSync(filePath)) {
       return {
         snippet: parseSnippetFile(filePath),
         matchType: "prefix",
@@ -44,35 +51,37 @@ export function resolveSnippet(name: string): ResolveResult | null {
     }
   }
 
-  // 2. Exact slug match across all type directories
+  // 2. Exact slug match across ALL type directories (collect, don't short-circuit)
+  const exactMatches: Snippet[] = [];
   for (const type of config.types) {
     const filePath = resolve(libPath, type, `${name}.md`);
-    if (filePath.startsWith(resolvedLibPath + "/") && existsSync(filePath)) {
-      return {
-        snippet: parseSnippetFile(filePath),
-        matchType: "exact",
-      };
+    if (isInsideDir(resolvedLibPath, filePath) && existsSync(filePath)) {
+      exactMatches.push(parseSnippetFile(filePath));
     }
   }
+  if (exactMatches.length === 1) {
+    return { snippet: exactMatches[0], matchType: "exact" };
+  }
+  if (exactMatches.length > 1) {
+    return { snippets: exactMatches, matchType: "ambiguous" };
+  }
 
-  // 3. Alias match
+  // 3. Alias match (collect all — same alias on multiple snippets is ambiguous)
   const allSnippets = getAllSnippets(libPath);
-  const aliasMatch = allSnippets.find((s) =>
+  const aliasMatches = allSnippets.filter((s) =>
     s.frontmatter.aliases.some(
       (a) => a.toLowerCase() === name.toLowerCase(),
     ),
   );
-  if (aliasMatch) {
-    return { snippet: aliasMatch, matchType: "alias" };
+  if (aliasMatches.length === 1) {
+    return { snippet: aliasMatches[0], matchType: "alias" };
+  }
+  if (aliasMatches.length > 1) {
+    return { snippets: aliasMatches, matchType: "ambiguous" };
   }
 
   // 4. Fuzzy match — find candidates whose slug contains the search term
-  const fuzzyMatches = allSnippets.filter(
-    (s) =>
-      s.slug.includes(name.toLowerCase()) ||
-      s.frontmatter.title.toLowerCase().includes(name.toLowerCase()),
-  );
-
+  const fuzzyMatches = fuzzyFilter(allSnippets, name);
   if (fuzzyMatches.length === 1) {
     return { snippet: fuzzyMatches[0], matchType: "fuzzy" };
   }
@@ -80,11 +89,95 @@ export function resolveSnippet(name: string): ResolveResult | null {
   return null;
 }
 
-export function getFuzzyMatches(name: string): Snippet[] {
-  const allSnippets = getAllSnippets();
-  return allSnippets.filter(
+/**
+ * Get the type-prefixed path for a snippet, e.g. "prompts/code-review".
+ * Derived from the filePath by extracting the parent directory name + slug.
+ */
+export function getSnippetPrefix(snippet: Snippet): string {
+  const typeDir = basename(dirname(snippet.filePath));
+  return `${typeDir}/${snippet.slug}`;
+}
+
+/**
+ * Resolve a snippet, auto-picking the first match when ambiguous.
+ * Use this for non-destructive commands (show, copy, etc.) where
+ * silently picking one is acceptable.
+ */
+export function resolveSnippetLoose(name: string): ResolveResult | null {
+  const result = resolveSnippet(name);
+  if (result?.matchType === "ambiguous") {
+    return { snippet: result.snippets[0], matchType: "picked" };
+  }
+  return result;
+}
+
+/**
+ * If the result is ambiguous, print disambiguation suggestions and exit.
+ * Uses TypeScript assertion to narrow the union for callers.
+ */
+export function exitIfAmbiguous(
+  result: ResolveResult | AmbiguousResult | null,
+  name: string,
+  command: string,
+  argsSuffix?: string,
+): asserts result is ResolveResult | null {
+  if (result && result.matchType === "ambiguous") {
+    console.error(`Multiple snippets match "${name}". Use the full path:`);
+    for (const s of result.snippets) {
+      const suffix = argsSuffix ? ` ${argsSuffix}` : "";
+      console.error(`  snip ${command} ${getSnippetPrefix(s)}${suffix}`);
+    }
+    process.exit(EXIT_CODES.NOT_FOUND);
+  }
+}
+
+/**
+ * If the result is a fuzzy match, treat it as not-found with a suggestion.
+ * Destructive commands (exec, rm, rename) should reject fuzzy matches to
+ * prevent accidental operations on the wrong snippet.
+ */
+export function exitIfFuzzy(
+  result: ResolveResult | null,
+  name: string,
+): asserts result is Exclude<ResolveResult, { matchType: "fuzzy" }> | null {
+  if (result?.matchType === "fuzzy") {
+    console.error(`Snippet "${name}" not found. Refusing fuzzy match for destructive command.`);
+    console.error("\nDid you mean:");
+    console.error(`  ${result.snippet.slug} — ${result.snippet.frontmatter.title}`);
+    process.exit(EXIT_CODES.NOT_FOUND);
+  }
+}
+
+/**
+ * If the result is null, print "not found" with fuzzy suggestions and exit.
+ * Uses TypeScript assertion to narrow away null for callers.
+ */
+export function exitIfNotFound(
+  result: ResolveResult | null,
+  name: string,
+): asserts result is ResolveResult {
+  if (!result) {
+    const fuzzy = getFuzzyMatches(name);
+    console.error(`Snippet "${name}" not found.`);
+    if (fuzzy.length > 0) {
+      console.error("\nDid you mean:");
+      for (const s of fuzzy.slice(0, 5)) {
+        console.error(`  ${s.slug} — ${s.frontmatter.title}`);
+      }
+    }
+    process.exit(EXIT_CODES.NOT_FOUND);
+  }
+}
+
+function fuzzyFilter(snippets: Snippet[], name: string): Snippet[] {
+  const lower = name.toLowerCase();
+  return snippets.filter(
     (s) =>
-      s.slug.includes(name.toLowerCase()) ||
-      s.frontmatter.title.toLowerCase().includes(name.toLowerCase()),
+      s.slug.includes(lower) ||
+      s.frontmatter.title.toLowerCase().includes(lower),
   );
+}
+
+export function getFuzzyMatches(name: string): Snippet[] {
+  return fuzzyFilter(getAllSnippets(), name);
 }
