@@ -16,7 +16,9 @@ export function extractTemplateVariables(template: string): TemplateVariable[] {
     const existing = variables.get(name);
 
     if (!existing) {
-      variables.set(name, { name, ...(defaultValue !== undefined ? { defaultValue } : {}) });
+      const variable: TemplateVariable = { name };
+      if (defaultValue !== undefined) variable.defaultValue = defaultValue;
+      variables.set(name, variable);
       continue;
     }
 
