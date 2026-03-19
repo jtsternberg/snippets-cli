@@ -1,11 +1,10 @@
 import { Command } from "commander";
 import { renameSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { resolveSnippet, getFuzzyMatches, getAllSnippets } from "../lib/resolve.js";
+import { resolveSnippet, exitIfAmbiguous, exitIfFuzzy, exitIfNotFound, getAllSnippets } from "../lib/resolve.js";
 import { parseSnippetFile, writeSnippetFile } from "../lib/frontmatter.js";
 import { slugify } from "../lib/slug.js";
 import { loadConfig } from "../lib/config.js";
-import { EXIT_CODES } from "../types/index.js";
 
 export const renameCommand = new Command("rename")
   .description("Rename a snippet and update cross-links")
@@ -14,17 +13,9 @@ export const renameCommand = new Command("rename")
   .action(async (oldName: string, newTitle: string) => {
     const result = resolveSnippet(oldName);
 
-    if (!result) {
-      const fuzzy = getFuzzyMatches(oldName);
-      console.error(`Snippet "${oldName}" not found.`);
-      if (fuzzy.length > 0) {
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfAmbiguous(result, oldName, "rename", `"${newTitle}"`);
+    exitIfFuzzy(result, oldName);
+    exitIfNotFound(result, oldName);
 
     const { snippet } = result;
     const oldSlug = snippet.slug;

@@ -1,7 +1,6 @@
 import { Command } from "commander";
-import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose, exitIfNotFound } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
-import { EXIT_CODES } from "../types/index.js";
 import { highlight } from "cli-highlight";
 import { fmt } from "../lib/format.js";
 
@@ -11,19 +10,9 @@ export const showCommand = new Command("show")
   .option("--raw", "Output full file contents (frontmatter + body)")
   .option("--code", "Output only the code block content (no fences)")
   .action(async (name: string, opts: { raw?: boolean; code?: boolean }) => {
-    const result = resolveSnippet(name);
+    const result = resolveSnippetLoose(name);
 
-    if (!result) {
-      const fuzzy = getFuzzyMatches(name);
-      console.error(`Snippet "${name}" not found.`);
-      if (fuzzy.length > 0) {
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfNotFound(result, name);
 
     const { snippet } = result;
 

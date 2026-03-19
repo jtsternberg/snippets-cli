@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { input } from "@inquirer/prompts";
-import { resolveSnippet, getFuzzyMatches } from "../lib/resolve.js";
+import { resolveSnippetLoose, exitIfNotFound } from "../lib/resolve.js";
 import { extractCodeBlocks } from "../lib/frontmatter.js";
 import { writeClipboard } from "../lib/clipboard.js";
 import { extractTemplateVariables, fillTemplateVariables } from "../lib/template.js";
@@ -13,19 +13,9 @@ export const runCommand = new Command("run")
   .option("--no-copy", "Don't copy to clipboard, only print to stdout")
   .option("--skip-vars", "Leave unfilled variables as {{name}} without prompting")
   .action(async (name: string, opts: { var?: string[]; copy?: boolean; skipVars?: boolean }) => {
-    const result = resolveSnippet(name);
+    const result = resolveSnippetLoose(name);
 
-    if (!result) {
-      const fuzzy = getFuzzyMatches(name);
-      console.error(`Snippet "${name}" not found.`);
-      if (fuzzy.length > 0) {
-        console.error("\nDid you mean:");
-        for (const s of fuzzy.slice(0, 5)) {
-          console.error(`  ${s.slug} — ${s.frontmatter.title}`);
-        }
-      }
-      process.exit(EXIT_CODES.NOT_FOUND);
-    }
+    exitIfNotFound(result, name);
 
     const { snippet } = result;
 
