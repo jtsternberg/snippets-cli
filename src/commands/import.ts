@@ -10,7 +10,7 @@ import {
 } from "../lib/frontmatter.js";
 import { uniqueSlug } from "../lib/slug.js";
 import { EXIT_CODES } from "../types/index.js";
-import { updateAndEmbed } from "../lib/qmd.js";
+
 import { enrichSnippet, setProviderOverride, setDebugMode, isValidProvider } from "../lib/llm.js";
 import { requireGh, parseGistId, fetchGist } from "../lib/gist.js";
 
@@ -268,9 +268,6 @@ export const importCommand = new Command("import")
 
     console.log(`\n${imported} imported, ${failed} failed.`);
 
-    if (imported > 0) {
-      await updateAndEmbed();
-    }
   });
 
 // Map gist language names (from GitHub API) to our language identifiers
@@ -376,8 +373,4 @@ async function importFromGist(opts: {
   }
 
   console.log(`\n${imported} file(s) imported from gist ${gistId}`);
-
-  if (imported > 0) {
-    await updateAndEmbed();
-  }
 }

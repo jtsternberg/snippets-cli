@@ -8,8 +8,10 @@ import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../li
 import { getAllSnippets } from "../lib/resolve.js";
 import { detectShell, getCompletionPath, installShellCompletions } from "./install.js";
 import { fmt, status } from "../lib/format.js";
+import { isGitRepo, isHookInstalled, isHookUpToDate, hasExistingHook, hasRemote, installPostCommitHook, initGitRepo, commitAll, HOOK_VERSION, getCoreHooksPath } from "../lib/git.js";
+import { checkQmdStatus } from "../lib/qmd-status.js";
 
-type FixId = "types" | "completions" | "obsidian-base" | "qmd";
+type FixId = "types" | "completions" | "obsidian-base" | "qmd" | "git-hook" | "git-init" | "git-hook-outdated";
 
 async function runFixes(
   fixes: Set<FixId>,
@@ -29,6 +31,26 @@ async function runFixes(
   if (fixes.has("completions") && program) {
     console.log(fmt.dim("Running: snip install completions"));
     await installShellCompletions(program);
+    console.log("");
+  }
+
+  if (fixes.has("git-init")) {
+    console.log(fmt.dim("Running: initialize git repository"));
+    initGitRepo(libPath);
+    installPostCommitHook(libPath);
+    commitAll(libPath, "snip: initialize git tracking");
+    console.log("");
+  }
+
+  if (fixes.has("git-hook") && !fixes.has("git-init")) {
+    console.log(fmt.dim("Running: install post-commit hook"));
+    installPostCommitHook(libPath);
+    console.log("");
+  }
+
+  if (fixes.has("git-hook-outdated")) {
+    console.log(fmt.dim("Running: update post-commit hook"));
+    installPostCommitHook(libPath);
     console.log("");
   }
 
@@ -77,6 +99,16 @@ async function detectFixes(): Promise<{ fixes: Set<FixId>; libPath: string; conf
         const label = type.charAt(0).toUpperCase() + type.slice(1);
         if (!existsSync(resolve(typeDir, `${label}.base`))) fixes.add("obsidian-base");
       }
+    }
+  }
+
+  if (existsSync(libPath)) {
+    if (!isGitRepo(libPath)) {
+      fixes.add("git-init");
+    } else if (!isHookInstalled(libPath)) {
+      fixes.add("git-hook");
+    } else if (!isHookUpToDate(libPath)) {
+      fixes.add("git-hook-outdated");
     }
   }
 
@@ -142,6 +174,57 @@ export async function runDoctorCheck(
     console.log(status.warn(`Library not found at ${libPath}`));
     console.log(`      Fix: snip init [path]`);
     console.log(`      Example: snip init ~/snippets`);
+    issues++;
+  }
+
+  // 2.5 Git
+  console.log(fmt.bold("\nGit:"));
+  if (isGitRepo(libPath)) {
+    console.log(status.ok("Repository initialized"));
+
+    const coreHooksPath = getCoreHooksPath(libPath);
+    if (coreHooksPath) {
+      console.log(status.info(`core.hooksPath is set to: ${coreHooksPath}`));
+    }
+
+    if (isHookInstalled(libPath)) {
+      if (isHookUpToDate(libPath)) {
+        console.log(status.ok(`Post-commit hook installed (v${HOOK_VERSION})`));
+      } else {
+        console.log(status.warn(`Post-commit hook outdated (current: v${HOOK_VERSION})`));
+        console.log(`      Fix: snip doctor --fix`);
+        fixes.add("git-hook-outdated");
+        issues++;
+      }
+    } else {
+      console.log(status.warn("Post-commit hook missing"));
+      console.log(`      Fix: snip doctor --fix`);
+      fixes.add("git-hook");
+      issues++;
+    }
+
+    if (hasExistingHook(libPath)) {
+      console.log(status.info("Post-commit hook has additional (non-snip) content — preserved"));
+    }
+
+    if (hasRemote(libPath)) {
+      console.log(status.ok("Remote configured"));
+    } else {
+      console.log(status.info(`No remote configured — add one with: git -C ${libPath} remote add origin <url>`));
+    }
+
+    // Check for pending QMD errors
+    const qmdErrors = checkQmdStatus(libPath);
+    if (qmdErrors) {
+      console.log(status.warn(`Pending QMD errors: ${qmdErrors}`));
+      issues++;
+    } else {
+      console.log(status.ok("No pending QMD errors"));
+    }
+  } else {
+    console.log(status.warn("No git repository"));
+    console.log(`      Fix: snip doctor --fix`);
+    fixes.add("git-init");
     issues++;
   }
 

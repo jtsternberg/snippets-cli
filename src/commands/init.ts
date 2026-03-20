@@ -10,6 +10,7 @@ import {
 } from "../lib/config.js";
 import { EXIT_CODES } from "../types/index.js";
 import { registerCollection, ensureQmd } from "../lib/qmd.js";
+import { initGitRepo, installPostCommitHook, commitAll } from "../lib/git.js";
 
 export const initCommand = new Command("init")
   .description("Initialize a new snippet library")
@@ -41,7 +42,7 @@ export const initCommand = new Command("init")
     if (!existsSync(gitignorePath)) {
       writeFileSync(
         gitignorePath,
-        [".qmd/", ".DS_Store", ".obsidian/workspace.json", ""].join("\n"),
+        [".qmd/", ".DS_Store", ".obsidian/workspace.json", ".snip-qmd-status", ""].join("\n"),
         "utf-8",
       );
     }
@@ -99,6 +100,12 @@ export const initCommand = new Command("init")
       await registerCollection(libraryPath, config.qmd.collectionName);
       console.log(`\nqmd collection "${config.qmd.collectionName}" registered.`);
     }
+
+    // Initialize git repo for version tracking
+    initGitRepo(libraryPath);
+    installPostCommitHook(libraryPath);
+    commitAll(libraryPath, "snip: initialize collection");
+    console.log(`\nGit repository initialized with post-commit hook.`);
 
     console.log(
       `\nTip: Open ${libraryPath} as an Obsidian vault for visual browsing.`,

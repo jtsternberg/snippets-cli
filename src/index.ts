@@ -1,5 +1,7 @@
 import { Command } from "commander";
 import { assertLibraryExists, getLibraryPath } from "./lib/config.js";
+import { isGitRepo, initGitRepo, installPostCommitHook, isHookInstalled, commitAll, hasChanges } from "./lib/git.js";
+import { surfaceQmdErrors } from "./lib/qmd-status.js";
 import { initCommand } from "./commands/init.js";
 import { addCommand } from "./commands/add.js";
 import { showCommand } from "./commands/show.js";
@@ -82,9 +84,85 @@ const LIBRARY_EXEMPT = new Set([
   "config:llm", "config:llm:provider", "config:llm:fallback", "config:llm:key", "config:llm:model",
 ]);
 
+// Commands that modify snippet files and should trigger a git commit
+const COMMIT_COMMANDS = new Set([
+  "add", "edit", "rm", "rename", "enrich", "import", "sync",
+  "config:types:add", "config:types:remove", "config:types:fix",
+]);
+
+function buildCommitMessage(name: string, actionCommand: Command): string {
+  const args = actionCommand.processedArgs || [];
+  switch (name) {
+    case "add": {
+      const title = actionCommand.opts()?.title || args[0] || "";
+      return title ? `snip: add "${title}"` : "snip: add snippet";
+    }
+    case "edit":
+      return args[0] ? `snip: edit "${args[0]}"` : "snip: edit snippet";
+    case "rm":
+      return args[0] ? `snip: rm "${args[0]}"` : "snip: rm snippet";
+    case "rename":
+      return args[0] && args[1] ? `snip: rename "${args[0]}" → "${args[1]}"` : "snip: rename snippet";
+    case "enrich":
+      return "snip: enrich snippets";
+    case "import":
+      return "snip: import files";
+    case "sync":
+      return "snip: sync with gist";
+    default:
+      return `snip: ${name}`;
+  }
+}
+
 program.hook("preAction", (_thisCommand, actionCommand) => {
-  if (!LIBRARY_EXEMPT.has(actionCommand.name())) {
+  const name = actionCommand.name();
+
+  if (!LIBRARY_EXEMPT.has(name)) {
     assertLibraryExists(getLibraryPath());
+  }
+
+  // Surface any QMD errors from last async hook run (doctor checks this itself)
+  if (name !== "doctor") {
+    try {
+      const libPath = getLibraryPath();
+      if (libPath) {
+        surfaceQmdErrors(libPath);
+      }
+    } catch {
+      // Library path may not exist yet (e.g., during init)
+    }
+  }
+
+  // Git setup: handles both fresh and pre-existing repos
+  if (!LIBRARY_EXEMPT.has(name)) {
+    try {
+      const libPath = getLibraryPath();
+      if (!isGitRepo(libPath)) {
+        initGitRepo(libPath);
+        installPostCommitHook(libPath);
+        commitAll(libPath, "snip: initialize git tracking");
+      } else if (!isHookInstalled(libPath)) {
+        installPostCommitHook(libPath);
+      }
+    } catch {
+      // Git operations are best-effort
+    }
+  }
+});
+
+program.hook("postAction", (_thisCommand, actionCommand) => {
+  const name = actionCommand.name();
+
+  if (COMMIT_COMMANDS.has(name)) {
+    try {
+      const libPath = getLibraryPath();
+      if (isGitRepo(libPath) && hasChanges(libPath)) {
+        const message = buildCommitMessage(name, actionCommand);
+        commitAll(libPath, message);
+      }
+    } catch {
+      // Git operations are best-effort
+    }
   }
 });
 
