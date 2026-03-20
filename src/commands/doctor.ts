@@ -17,7 +17,9 @@ export async function runDoctorCheck(): Promise<void> {
   if (configExists()) {
     console.log(status.ok(`Config exists at ${getConfigPath()}`));
   } else {
-    console.log(status.warn("No config found. Run: snip init"));
+    console.log(status.warn("No config found"));
+    console.log(`      Fix: snip init [path]`);
+    console.log(`      Example: snip init ~/snippets`);
     issues++;
   }
 
@@ -35,11 +37,14 @@ export async function runDoctorCheck(): Promise<void> {
         console.log(status.ok(`${type}/ directory exists`));
       } else {
         console.log(status.warn(`${type}/ directory missing`));
+        console.log(`      Fix: snip config:types:fix`);
         issues++;
       }
     }
   } else {
-    console.log(status.warn(`Library not found at ${libPath}. Run: snip init`));
+    console.log(status.warn(`Library not found at ${libPath}`));
+    console.log(`      Fix: snip init [path]`);
+    console.log(`      Example: snip init ~/snippets`);
     issues++;
   }
 
@@ -56,6 +61,7 @@ export async function runDoctorCheck(): Promise<void> {
       const match = rel.match(/\[\[(.+?)\]\]/);
       if (match && !allSlugs.has(match[1])) {
         console.log(status.warn(`Broken link in ${s.slug}: ${rel}`));
+        console.log(`      Fix: snip edit ${s.frontmatter.type}/${s.slug}`);
         brokenLinks++;
       }
     }
@@ -134,6 +140,7 @@ export async function runDoctorCheck(): Promise<void> {
       console.log(status.ok("Obsidian CLI is available"));
     } else {
       console.log(status.info("Obsidian CLI not installed (optional)"));
+      console.log(`      Enable in: Obsidian > Settings > General > Command line interface`);
     }
 
     const vaultName = hasCli ? getVaultName(libPath) : null;
@@ -149,17 +156,21 @@ export async function runDoctorCheck(): Promise<void> {
         if (existsSync(basePath)) {
           console.log(status.ok(`${type}/${label}.base exists`));
         } else {
-          console.log(status.warn(`${type}/${label}.base missing. Run: snip install obsidian`));
+          console.log(status.warn(`${type}/${label}.base missing`));
+          console.log(`      Fix: snip install obsidian`);
           issues++;
         }
       }
     } else if (hasCli) {
-      console.log(status.info("Vault not initialized. Run: snip install obsidian"));
+      console.log(status.info("Vault not initialized"));
+      console.log(`      Open Obsidian > Open another vault > Open folder as vault`);
+      console.log(`      Select: ${libPath}`);
     } else {
       console.log(status.info("Install Obsidian CLI to check vault status"));
+      console.log(`      Enable in: Obsidian > Settings > General > Command line interface`);
     }
   } else {
-    console.log(status.info("Obsidian not installed (optional)"));
+    console.log(status.info("Obsidian not installed (optional). Download: https://obsidian.md"));
   }
 
   // 6. qmd
@@ -191,7 +202,8 @@ export async function runDoctorCheck(): Promise<void> {
       }
     }
   } else {
-    console.log(status.info("qmd not installed (optional). Install: npm i -g @tobilu/qmd"));
+    console.log(status.info("qmd not installed (optional)"));
+    console.log(`      Install: npm i -g @tobilu/qmd`);
   }
 
   // 6. Ollama
@@ -207,9 +219,12 @@ export async function runDoctorCheck(): Promise<void> {
       console.log(status.ok(`Ollama is running at ${config.llm.ollamaHost}`));
     } else {
       console.log(status.info("Ollama not responding (optional)"));
+      console.log(`      Start with: ollama serve`);
     }
   } catch {
     console.log(status.info(`Ollama not running at ${config.llm.ollamaHost} (optional)`));
+    console.log(`      Start with: ollama serve`);
+    console.log(`      Install: https://ollama.ai`);
   }
 
   // Summary
