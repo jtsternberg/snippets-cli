@@ -8,8 +8,10 @@ import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../li
 import { getAllSnippets } from "../lib/resolve.js";
 import { detectShell, getCompletionPath, installShellCompletions } from "./install.js";
 import { fmt, status } from "../lib/format.js";
+import { isGitRepo, isHookInstalled, hasExistingHook, hasRemote, installPostCommitHook, HOOK_VERSION } from "../lib/git.js";
+import { checkQmdStatus } from "../lib/qmd-status.js";
 
-type FixId = "types" | "completions" | "obsidian-base" | "qmd";
+type FixId = "types" | "completions" | "obsidian-base" | "qmd" | "git-hook";
 
 export async function runDoctorCheck(
   opts: { fix?: boolean; program?: Command } = {},
@@ -51,6 +53,44 @@ export async function runDoctorCheck(
     console.log(status.warn(`Library not found at ${libPath}`));
     console.log(`      Fix: snip init [path]`);
     console.log(`      Example: snip init ~/snippets`);
+    issues++;
+  }
+
+  // 2.5 Git
+  console.log(fmt.bold("\nGit:"));
+  if (isGitRepo(libPath)) {
+    console.log(status.ok("Repository initialized"));
+
+    if (isHookInstalled(libPath)) {
+      console.log(status.ok(`Post-commit hook installed (v${HOOK_VERSION})`));
+    } else {
+      console.log(status.warn("Post-commit hook missing"));
+      console.log(`      Fix: snip doctor --fix`);
+      fixes.add("git-hook");
+      issues++;
+    }
+
+    if (hasExistingHook(libPath)) {
+      console.log(status.info("Post-commit hook has additional (non-snip) content — preserved"));
+    }
+
+    if (hasRemote(libPath)) {
+      console.log(status.ok("Remote configured"));
+    } else {
+      console.log(status.info(`No remote configured — add one with: git -C ${libPath} remote add origin <url>`));
+    }
+
+    // Check for pending QMD errors
+    const qmdErrors = checkQmdStatus(libPath);
+    if (qmdErrors) {
+      console.log(status.warn(`Pending QMD errors: ${qmdErrors}`));
+      issues++;
+    } else {
+      console.log(status.ok("No pending QMD errors"));
+    }
+  } else {
+    console.log(status.warn("No git repository"));
+    console.log(`      Git tracking will be initialized on next snip command`);
     issues++;
   }
 
@@ -268,6 +308,13 @@ export async function runDoctorCheck(
         await configTypesFixCommand.parseAsync([], { from: "user" });
         console.log("");
       }
+    }
+
+    if (fixes.has("git-hook")) {
+      console.log(fmt.dim("Running: install post-commit hook"));
+      installPostCommitHook(libPath);
+      console.log(status.ok("Post-commit hook installed"));
+      console.log("");
     }
 
     if (fixes.has("qmd")) {
