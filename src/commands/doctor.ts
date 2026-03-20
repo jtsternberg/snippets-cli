@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { configExists, loadConfig, getLibraryPath, getConfigPath } from "../lib/config.js";
 import { isQmdInstalled, getCollectionPath } from "../lib/qmd.js";
+import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../lib/obsidian.js";
 import { getAllSnippets } from "../lib/resolve.js";
 import { detectShell, getCompletionPath } from "./install.js";
 import { fmt, status } from "../lib/format.js";
@@ -119,7 +120,45 @@ export async function runDoctorCheck(): Promise<void> {
     console.log(status.info(`Could not determine completion path for shell: ${shell}`));
   }
 
-  // 5. qmd
+  // 5. Obsidian
+  console.log(fmt.bold("\nObsidian:"));
+  if (isObsidianInstalled()) {
+    console.log(status.ok("Obsidian is installed"));
+
+    const hasCli = isObsidianCliAvailable();
+    if (hasCli) {
+      console.log(status.ok("Obsidian CLI is available"));
+    } else {
+      console.log(status.info("Obsidian CLI not installed (optional)"));
+    }
+
+    const vaultName = hasCli ? getVaultName(libPath) : null;
+    if (vaultName) {
+      console.log(status.ok(`Vault registered as "${vaultName}"`));
+
+      // Check .base files for each type
+      for (const type of config.types) {
+        const typeDir = resolve(libPath, type);
+        if (!existsSync(typeDir)) continue;
+        const label = type.charAt(0).toUpperCase() + type.slice(1);
+        const basePath = resolve(typeDir, `${label}.base`);
+        if (existsSync(basePath)) {
+          console.log(status.ok(`${type}/${label}.base exists`));
+        } else {
+          console.log(status.warn(`${type}/${label}.base missing. Run: snip install obsidian`));
+          issues++;
+        }
+      }
+    } else if (hasCli) {
+      console.log(status.info("Vault not initialized. Run: snip install obsidian"));
+    } else {
+      console.log(status.info("Install Obsidian CLI to check vault status"));
+    }
+  } else {
+    console.log(status.info("Obsidian not installed (optional)"));
+  }
+
+  // 6. qmd
   console.log(fmt.bold("\nqmd:"));
   const hasQmd = await isQmdInstalled();
   if (hasQmd) {
