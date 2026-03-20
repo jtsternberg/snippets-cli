@@ -83,6 +83,19 @@ export function getCollectionPath(name: string): string | null {
   return match ? match[1].trim() : null;
 }
 
+/** Find which collection name a given path is registered under, if any. */
+export function getCollectionNameForPath(path: string): string | null {
+  if (!existsSync(QMD_CONFIG_PATH)) return null;
+  const content = readFileSync(QMD_CONFIG_PATH, "utf-8");
+  // Match all "  <name>:\n    path: <value>" pairs
+  const re = /^ {2}(\S+):\s*\n {4}path:\s*(.+)$/gm;
+  let match;
+  while ((match = re.exec(content)) !== null) {
+    if (match[2].trim() === path) return match[1];
+  }
+  return null;
+}
+
 const COLLECTION_CONTEXT =
   "Code snippets, prompt templates, and CLI commands managed by snip — reusable fragments in Obsidian-compatible markdown";
 
@@ -100,37 +113,35 @@ export async function registerCollection(
 ): Promise<void> {
   if (!(await ensureQmd())) return;
 
-  try {
+  // Check existing state before acting — avoids fragile error message parsing
+  const existingPath = getCollectionPath(name);
+  const existingName = getCollectionNameForPath(path);
+
+  if (existingPath === path && existingName === name) {
+    // Already correctly registered
+    return;
+  }
+
+  // Path registered under a different name — remove the old one first
+  if (existingName && existingName !== name) {
+    console.error(
+      `Path already registered as "${existingName}", renaming to "${name}"...`,
+    );
+    await execFileAsync("qmd", ["collection", "remove", existingName]);
+  }
+
+  // Name registered with a different path — remove it first
+  if (existingPath && existingPath !== path) {
+    console.error(
+      `qmd collection "${name}" points to ${existingPath}, expected ${path}. Re-registering...`,
+    );
+    await execFileAsync("qmd", ["collection", "remove", name]);
+  }
+
+  // Register (or re-register) the collection
+  if (existingPath !== path || existingName !== name) {
     await execFileAsync("qmd", ["collection", "add", path, "--name", name]);
     await addCollectionContext(path);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    // Path registered under a different name — check this first (more specific match)
-    const oldNameMatch = message.match(/Name:\s+(\S+)/);
-    if (oldNameMatch && message.includes("already exists for this path")) {
-      const oldName = oldNameMatch[1];
-      console.error(
-        `Path already registered as "${oldName}", renaming to "${name}"...`,
-      );
-      await execFileAsync("qmd", ["collection", "remove", oldName]);
-      await execFileAsync("qmd", ["collection", "add", path, "--name", name]);
-      await addCollectionContext(path);
-      return;
-    }
-    // Same name exists — verify it points to the correct path
-    if (message.includes("already exists")) {
-      const existingPath = getCollectionPath(name);
-      if (existingPath && existingPath !== path) {
-        console.error(
-          `qmd collection "${name}" points to ${existingPath}, expected ${path}. Re-registering...`,
-        );
-        await execFileAsync("qmd", ["collection", "remove", name]);
-        await execFileAsync("qmd", ["collection", "add", path, "--name", name]);
-        await addCollectionContext(path);
-      }
-      return;
-    }
-    throw err;
   }
 }
 
