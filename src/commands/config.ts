@@ -7,8 +7,9 @@ import {
   getLibraryPath,
 } from "../lib/config.js";
 import { getProviderNames } from "../lib/providers/index.js";
-import { mkdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { EXIT_CODES } from "../types/index.js";
 import type { LlmProviderName } from "../types/index.js";
@@ -82,6 +83,19 @@ export const configTypesAddCommand = new Command("config:types:add")
     // Create directory first — only save config if mkdir succeeds
     const typeDir = resolve(libPath, name);
     mkdirSync(typeDir, { recursive: true });
+
+    // Create Obsidian .base file for the new type directory
+    const label = name.charAt(0).toUpperCase() + name.slice(1);
+    const basePath = resolve(typeDir, `${label}.base`);
+    if (!existsSync(basePath)) {
+      const __filename = fileURLToPath(import.meta.url);
+      const assetsDir = resolve(dirname(__filename), "../assets");
+      const templatePath = resolve(assetsDir, "sample.base");
+      if (existsSync(templatePath)) {
+        const template = readFileSync(templatePath, "utf-8");
+        writeFileSync(basePath, template.replace("{{TYPE}}", name), "utf-8");
+      }
+    }
 
     config.types.push(name);
     saveConfig(config);
