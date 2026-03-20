@@ -11,9 +11,100 @@ import { fmt, status } from "../lib/format.js";
 
 type FixId = "types" | "completions" | "obsidian-base" | "qmd";
 
+async function runFixes(
+  fixes: Set<FixId>,
+  libPath: string,
+  config: ReturnType<typeof loadConfig>,
+  program?: Command,
+): Promise<void> {
+  console.log(fmt.bold(`Fixing ${fixes.size} auto-fixable issue(s)...\n`));
+
+  if (fixes.has("types") || fixes.has("obsidian-base")) {
+    console.log(fmt.dim("Running: snip config:types:fix"));
+    const { configTypesFixCommand } = await import("./config.js");
+    await configTypesFixCommand.parseAsync([], { from: "user" });
+    console.log("");
+  }
+
+  if (fixes.has("completions") && program) {
+    console.log(fmt.dim("Running: snip install completions"));
+    await installShellCompletions(program);
+    console.log("");
+  }
+
+  if (fixes.has("qmd")) {
+    console.log(fmt.dim("Running: snip install qmd"));
+    await registerCollection(libPath, config.qmd.collectionName);
+    await updateAndEmbed();
+    console.log(status.ok("qmd collection fixed"));
+    console.log("");
+  }
+}
+
+/** Detect which fixes are needed without printing anything. */
+async function detectFixes(): Promise<{ fixes: Set<FixId>; libPath: string; config: ReturnType<typeof loadConfig> }> {
+  const fixes = new Set<FixId>();
+  const config = loadConfig();
+  const libPath = getLibraryPath(config);
+
+  if (existsSync(libPath)) {
+    for (const type of config.types) {
+      if (!existsSync(`${libPath}/${type}`)) fixes.add("types");
+    }
+  }
+
+  const shell = detectShell();
+  const completionPath = getCompletionPath(shell);
+  if (completionPath && !existsSync(completionPath)) {
+    fixes.add("completions");
+  } else if (completionPath && existsSync(completionPath) && shell === "zsh") {
+    const zshrc = resolve(homedir(), ".zshrc");
+    if (existsSync(zshrc)) {
+      const content = readFileSync(zshrc, "utf-8");
+      if (!content.includes(".zsh/completions") || !content.includes("fpath") || !content.includes("compinit")) {
+        fixes.add("completions");
+      }
+    }
+  }
+
+  if (isObsidianInstalled()) {
+    const hasCli = isObsidianCliAvailable();
+    const vaultName = hasCli ? getVaultName(libPath) : null;
+    if (vaultName) {
+      for (const type of config.types) {
+        const typeDir = resolve(libPath, type);
+        if (!existsSync(typeDir)) continue;
+        const label = type.charAt(0).toUpperCase() + type.slice(1);
+        if (!existsSync(resolve(typeDir, `${label}.base`))) fixes.add("obsidian-base");
+      }
+    }
+  }
+
+  if (await isQmdInstalled()) {
+    const collectionPath = getCollectionPath(config.qmd.collectionName);
+    if (!collectionPath || !existsSync(collectionPath) || collectionPath !== libPath) {
+      fixes.add("qmd");
+    }
+  }
+
+  return { fixes, libPath, config };
+}
+
 export async function runDoctorCheck(
   opts: { fix?: boolean; program?: Command } = {},
 ): Promise<void> {
+  // If --fix, detect and fix silently first, then show a clean doctor run
+  if (opts.fix) {
+    const { fixes, libPath, config } = await detectFixes();
+    if (fixes.size > 0) {
+      await runFixes(fixes, libPath, config, opts.program);
+      console.log("");
+    }
+    // Now run the normal doctor check (without --fix) to show results
+    await runDoctorCheck({ fix: false, program: opts.program });
+    return;
+  }
+
   let issues = 0;
   const fixes = new Set<FixId>();
 
@@ -240,45 +331,10 @@ export async function runDoctorCheck(
     console.log(`      Install: https://ollama.ai`);
   }
 
-  // Summary & auto-fix
+  // Summary
   console.log("");
   if (issues === 0) {
     console.log(fmt.greenBold("All checks passed!"));
-  } else if (opts.fix && fixes.size > 0) {
-    console.log(fmt.bold(`Fixing ${fixes.size} auto-fixable issue(s)...\n`));
-
-    if (fixes.has("types")) {
-      console.log(fmt.dim("Running: snip config:types:fix"));
-      const { configTypesFixCommand } = await import("./config.js");
-      await configTypesFixCommand.parseAsync([], { from: "user" });
-      console.log("");
-    }
-
-    if (fixes.has("completions") && opts.program) {
-      console.log(fmt.dim("Running: snip install completions"));
-      await installShellCompletions(opts.program);
-      console.log("");
-    }
-
-    if (fixes.has("obsidian-base")) {
-      // Reuse config:types:fix — it creates both dirs and .base files
-      if (!fixes.has("types")) {
-        console.log(fmt.dim("Running: snip config:types:fix"));
-        const { configTypesFixCommand } = await import("./config.js");
-        await configTypesFixCommand.parseAsync([], { from: "user" });
-        console.log("");
-      }
-    }
-
-    if (fixes.has("qmd")) {
-      console.log(fmt.dim("Running: snip install qmd"));
-      await registerCollection(libPath, config.qmd.collectionName);
-      await updateAndEmbed();
-      console.log(status.ok("qmd collection fixed"));
-      console.log("");
-    }
-
-    console.log(fmt.greenBold("Auto-fix complete. Run snip doctor again to verify."));
   } else {
     console.log(fmt.yellowBold(`${issues} issue(s) found.`));
     if (fixes.size > 0) {

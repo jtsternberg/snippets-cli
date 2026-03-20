@@ -105,8 +105,20 @@ export async function registerCollection(
     await addCollectionContext(path);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+    // Path registered under a different name — check this first (more specific match)
+    const oldNameMatch = message.match(/Name:\s+(\S+)/);
+    if (oldNameMatch && message.includes("already exists for this path")) {
+      const oldName = oldNameMatch[1];
+      console.error(
+        `Path already registered as "${oldName}", renaming to "${name}"...`,
+      );
+      await execFileAsync("qmd", ["collection", "remove", oldName]);
+      await execFileAsync("qmd", ["collection", "add", path, "--name", name]);
+      await addCollectionContext(path);
+      return;
+    }
+    // Same name exists — verify it points to the correct path
     if (message.includes("already exists")) {
-      // Verify existing collection points to the correct path
       const existingPath = getCollectionPath(name);
       if (existingPath && existingPath !== path) {
         console.error(

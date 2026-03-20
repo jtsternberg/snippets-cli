@@ -15,6 +15,16 @@ import { EXIT_CODES } from "../types/index.js";
 import type { LlmProviderName } from "../types/index.js";
 import { fmt, status } from "../lib/format.js";
 
+const __cfgFilename = fileURLToPath(import.meta.url);
+const __cfgDirname = dirname(__cfgFilename);
+
+/** Resolve assets dir — works in both dist/ and src/commands/. */
+function getAssetsDir(): string {
+  const candidate = resolve(__cfgDirname, "../assets");
+  if (existsSync(candidate)) return candidate;
+  return resolve(__cfgDirname, "../../assets");
+}
+
 export const configCommand = new Command("config")
   .description("View or modify configuration")
   .argument("[key]", "Config key to get or set")
@@ -89,9 +99,7 @@ export const configTypesAddCommand = new Command("config:types:add")
     const label = name.charAt(0).toUpperCase() + name.slice(1);
     const basePath = resolve(typeDir, `${label}.base`);
     if (!existsSync(basePath)) {
-      const __filename = fileURLToPath(import.meta.url);
-      const assetsDir = resolve(dirname(__filename), "../assets");
-      const templatePath = resolve(assetsDir, "sample.base");
+      const templatePath = resolve(getAssetsDir(), "sample.base");
       if (existsSync(templatePath)) {
         const template = readFileSync(templatePath, "utf-8");
         writeFileSync(basePath, template.replace("{{TYPE}}", name), "utf-8");
@@ -136,9 +144,7 @@ export const configTypesFixCommand = new Command("config:types:fix")
     const libPath = getLibraryPath(config);
     assertLibraryExists(libPath);
 
-    const __filename = fileURLToPath(import.meta.url);
-    const assetsDir = resolve(dirname(__filename), "../assets");
-    const templatePath = resolve(assetsDir, "sample.base");
+    const templatePath = resolve(getAssetsDir(), "sample.base");
     const hasTemplate = existsSync(templatePath);
     const template = hasTemplate ? readFileSync(templatePath, "utf-8") : null;
 

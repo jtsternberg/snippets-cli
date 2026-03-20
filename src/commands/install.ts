@@ -956,10 +956,17 @@ export function generateInfoPlist(snipBin: string, maxResults: number): string {
 </plist>`;
 }
 
-// Bundled Alfred workflow icon (256×256 PNG).
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const WORKFLOW_ICON_PATH = resolve(__dirname, "../assets/alfred-icon.png");
+
+/** Resolve assets dir — works in both dist/ (../assets) and src/commands/ (../../assets). */
+function getAssetsDir(): string {
+  const candidate = resolve(__dirname, "../assets");
+  if (existsSync(candidate)) return candidate;
+  return resolve(__dirname, "../../assets");
+}
+
+const WORKFLOW_ICON_PATH = resolve(getAssetsDir(), "alfred-icon.png");
 
 function escapeXml(str: string): string {
   return str
@@ -1100,7 +1107,7 @@ function installObsidian(): void {
 
   // --- Base views ---
   console.log(fmt.bold("\nBase views:"));
-  const baseTemplate = readFileSync(resolve(__dirname, "../assets/sample.base"), "utf-8");
+  const baseTemplate = readFileSync(resolve(getAssetsDir(), "sample.base"), "utf-8");
   for (const type of config.types) {
     const typeDir = resolve(libraryPath, type);
     if (!existsSync(typeDir)) continue;
