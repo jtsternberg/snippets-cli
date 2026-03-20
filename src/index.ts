@@ -121,14 +121,16 @@ program.hook("preAction", (_thisCommand, actionCommand) => {
     assertLibraryExists(getLibraryPath());
   }
 
-  // Surface any QMD errors from last async hook run
-  try {
-    const libPath = getLibraryPath();
-    if (libPath) {
-      surfaceQmdErrors(libPath);
+  // Surface any QMD errors from last async hook run (doctor checks this itself)
+  if (name !== "doctor") {
+    try {
+      const libPath = getLibraryPath();
+      if (libPath) {
+        surfaceQmdErrors(libPath);
+      }
+    } catch {
+      // Library path may not exist yet (e.g., during init)
     }
-  } catch {
-    // Library path may not exist yet (e.g., during init)
   }
 
   // Git setup: handles both fresh and pre-existing repos

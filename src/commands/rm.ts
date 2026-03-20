@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { unlinkSync } from "node:fs";
 import { confirm } from "@inquirer/prompts";
 import { resolveSnippet, exitIfAmbiguous, exitIfFuzzy, exitIfNotFound, getAllSnippets } from "../lib/resolve.js";
-import { update as qmdUpdate } from "../lib/qmd.js";
+
 
 export const rmCommand = new Command("rm")
   .description("Delete a snippet")
@@ -46,6 +46,4 @@ export const rmCommand = new Command("rm")
       console.log("Consider updating their cross-links.");
     }
 
-    // qmd post-hook: update index
-    await qmdUpdate();
   });

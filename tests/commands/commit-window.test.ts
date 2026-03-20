@@ -17,6 +17,7 @@ function snip(args: string[], testDir: string, libDir: string): string {
       HOME: testDir,
       XDG_CONFIG_HOME: resolve(testDir, ".config"),
       PATH: MINIMAL_PATH,
+      EDITOR: "true", // ensure config stores a fast no-op editor
     },
     encoding: "utf-8",
     timeout: 15000,

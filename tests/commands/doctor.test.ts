@@ -93,7 +93,7 @@ describe("doctor — Git section", () => {
     // Read HOOK_VERSION from git.ts to match — use a known sentinel pattern
     writeFileSync(
       resolve(hooksDir, "post-commit"),
-      `#!/usr/bin/env bash\n# >>> snip-hook-start >>>\n# Installed by snip v1.2.0\necho "hook"\n# <<< snip-hook-end <<<\n`,
+      `#!/usr/bin/env bash\n# >>> snip-hook-start >>>\n# Installed by snip v1.4.0\necho "hook"\n# <<< snip-hook-end <<<\n`,
       { mode: 0o755 },
     );
 

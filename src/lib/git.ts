@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-export const HOOK_VERSION = "1.2.0";
+export const HOOK_VERSION = "1.4.0";
 
 const HOOK_START = "# >>> snip-hook-start >>>";
 const HOOK_END = "# <<< snip-hook-end <<<";
@@ -12,6 +12,8 @@ const HOOK_BODY = `# >>> snip-hook-start >>>
 # Do not edit between the markers — snip manages this section.
 # To remove: run \`snip config git:unhook\` or delete between the markers.
 
+command -v qmd >/dev/null 2>&1 || exit 0
+
 COLLECTION_NAME="\${SNIP_QMD_COLLECTION:-snip}"
 STATUS_FILE="$(git rev-parse --show-toplevel)/.snip-qmd-status"
 
@@ -19,7 +21,7 @@ STATUS_FILE="$(git rev-parse --show-toplevel)/.snip-qmd-status"
   qmd update -c "$COLLECTION_NAME" 2>"$STATUS_FILE" && \\
   qmd embed -c "$COLLECTION_NAME" 2>>"$STATUS_FILE" && \\
   rm -f "$STATUS_FILE"
-) &
+) </dev/null >/dev/null 2>&1 &
 # <<< snip-hook-end <<<`;
 
 function gitExec(args: string[], cwd: string): string {

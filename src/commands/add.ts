@@ -10,7 +10,7 @@ import {
 import { uniqueSlug } from "../lib/slug.js";
 import { readClipboard } from "../lib/clipboard.js";
 import { EXIT_CODES } from "../types/index.js";
-import { updateAndEmbed } from "../lib/qmd.js";
+
 import { fmt } from "../lib/format.js";
 import ora from "ora";
 import { enrichSnippet, setProviderOverride, setDebugMode, isValidProvider } from "../lib/llm.js";
@@ -192,6 +192,4 @@ export const addCommand = new Command("add")
     if (enriched.language && !opts.lang) console.log(`  ${fmt.dim("Auto-detected language:")} ${enriched.language}`);
     if (enriched.tags?.length && !opts.tags) console.log(`  ${fmt.dim("Suggested tags:")} ${enriched.tags.join(", ")}`);
 
-    // qmd post-hook: update index
-    await updateAndEmbed();
   });
