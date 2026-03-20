@@ -83,6 +83,17 @@ export function getCollectionPath(name: string): string | null {
   return match ? match[1].trim() : null;
 }
 
+const COLLECTION_CONTEXT =
+  "Code snippets, prompt templates, and CLI commands managed by snip — reusable fragments in Obsidian-compatible markdown";
+
+async function addCollectionContext(path: string): Promise<void> {
+  try {
+    await execFileAsync("qmd", ["context", "add", path, COLLECTION_CONTEXT]);
+  } catch {
+    // Context is nice-to-have, not critical
+  }
+}
+
 export async function registerCollection(
   path: string,
   name: string,
@@ -91,6 +102,7 @@ export async function registerCollection(
 
   try {
     await execFileAsync("qmd", ["collection", "add", path, "--name", name]);
+    await addCollectionContext(path);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes("already exists")) {
@@ -102,6 +114,7 @@ export async function registerCollection(
         );
         await execFileAsync("qmd", ["collection", "remove", name]);
         await execFileAsync("qmd", ["collection", "add", path, "--name", name]);
+        await addCollectionContext(path);
       }
       return;
     }
