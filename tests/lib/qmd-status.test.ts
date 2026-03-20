@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtempSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { checkQmdStatus, surfaceQmdErrors } from "../../src/lib/qmd-status.js";
+import { checkQmdStatus, clearQmdStatus, surfaceQmdErrors } from "../../src/lib/qmd-status.js";
 
 const STATUS_FILENAME = ".snip-qmd-status";
 
@@ -27,20 +27,33 @@ describe("checkQmdStatus", () => {
     expect(checkQmdStatus(dir)).toBe("render failed: bad template");
   });
 
-  it("deletes the status file after reading", () => {
+  it("does not delete the status file after reading", () => {
     const statusPath = join(dir, STATUS_FILENAME);
     writeFileSync(statusPath, "some error", "utf-8");
 
     checkQmdStatus(dir);
-    expect(existsSync(statusPath)).toBe(false);
+    expect(existsSync(statusPath)).toBe(true);
   });
 
-  it("returns null for empty status file and deletes it", () => {
+  it("returns null for empty status file", () => {
     const statusPath = join(dir, STATUS_FILENAME);
     writeFileSync(statusPath, "", "utf-8");
 
     expect(checkQmdStatus(dir)).toBeNull();
+  });
+});
+
+describe("clearQmdStatus", () => {
+  it("deletes the status file", () => {
+    const statusPath = join(dir, STATUS_FILENAME);
+    writeFileSync(statusPath, "some error", "utf-8");
+
+    clearQmdStatus(dir);
     expect(existsSync(statusPath)).toBe(false);
+  });
+
+  it("is a no-op when no status file exists", () => {
+    clearQmdStatus(dir); // should not throw
   });
 });
 
