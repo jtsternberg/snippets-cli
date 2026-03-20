@@ -42,7 +42,7 @@ export const initCommand = new Command("init")
     if (!existsSync(gitignorePath)) {
       writeFileSync(
         gitignorePath,
-        [".qmd/", ".DS_Store", ".obsidian/workspace.json", ".snip-qmd-status", ""].join("\n"),
+        [".qmd/", ".DS_Store", ".obsidian/workspace.json", ".snip-qmd-status", "*.swp", "*~", ".*.swp", ""].join("\n"),
         "utf-8",
       );
     }
