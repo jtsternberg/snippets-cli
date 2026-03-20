@@ -47,6 +47,17 @@ describe("isGitInstalled", () => {
   it("returns true when git is available", () => {
     expect(isGitInstalled()).toBe(true);
   });
+
+  it("returns false when git is not on PATH (graceful degradation)", () => {
+    const originalPath = process.env.PATH;
+    try {
+      // Point PATH at an empty temp dir — no git binary here, pal
+      process.env.PATH = tempDir;
+      expect(isGitInstalled()).toBe(false);
+    } finally {
+      process.env.PATH = originalPath;
+    }
+  });
 });
 
 describe("isGitRepo", () => {

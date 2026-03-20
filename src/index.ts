@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { assertLibraryExists, getLibraryPath } from "./lib/config.js";
-import { isGitRepo, initGitRepo, installPostCommitHook, isHookInstalled, commitAll, hasChanges } from "./lib/git.js";
+import { isGitInstalled, isGitRepo, initGitRepo, installPostCommitHook, isHookInstalled, commitAll, hasChanges } from "./lib/git.js";
 import { surfaceQmdErrors } from "./lib/qmd-status.js";
 import { initCommand } from "./commands/init.js";
 import { addCommand } from "./commands/add.js";
@@ -134,7 +134,7 @@ program.hook("preAction", (_thisCommand, actionCommand) => {
   }
 
   // Git setup: handles both fresh and pre-existing repos
-  if (!LIBRARY_EXEMPT.has(name)) {
+  if (!LIBRARY_EXEMPT.has(name) && isGitInstalled()) {
     try {
       const libPath = getLibraryPath();
       if (!isGitRepo(libPath)) {
@@ -153,7 +153,7 @@ program.hook("preAction", (_thisCommand, actionCommand) => {
 program.hook("postAction", (_thisCommand, actionCommand) => {
   const name = actionCommand.name();
 
-  if (COMMIT_COMMANDS.has(name)) {
+  if (COMMIT_COMMANDS.has(name) && isGitInstalled()) {
     try {
       const libPath = getLibraryPath();
       if (isGitRepo(libPath) && hasChanges(libPath)) {
