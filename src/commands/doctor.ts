@@ -168,18 +168,19 @@ export async function runDoctorCheck(): Promise<void> {
     const collectionPath = getCollectionPath(collectionName);
 
     if (!collectionPath) {
-      console.log(status.warn(`qmd collection "${collectionName}" not registered. Run: snip init`));
+      console.log(status.warn(`qmd collection "${collectionName}" not registered`));
+      console.log(`      Fix: snip install qmd`);
       issues++;
     } else {
       console.log(status.ok(`Collection "${collectionName}" registered`));
 
       if (!existsSync(collectionPath)) {
         console.log(status.warn(`Collection path does not exist: ${collectionPath}`));
-        console.log(`      Run: snip init to re-register`);
+        console.log(`      Fix: snip install qmd`);
         issues++;
       } else if (collectionPath !== libPath) {
         console.log(status.warn(`Collection path mismatch: ${collectionPath} (expected ${libPath})`));
-        console.log(`      Run: snip init --force to fix`);
+        console.log(`      Fix: snip install qmd`);
         issues++;
       } else {
         console.log(status.ok(`Collection path matches library: ${collectionPath}`));
