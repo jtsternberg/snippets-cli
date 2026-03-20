@@ -8,10 +8,10 @@ import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../li
 import { getAllSnippets } from "../lib/resolve.js";
 import { detectShell, getCompletionPath, installShellCompletions } from "./install.js";
 import { fmt, status } from "../lib/format.js";
-import { isGitRepo, isHookInstalled, hasExistingHook, hasRemote, installPostCommitHook, HOOK_VERSION, getCoreHooksPath } from "../lib/git.js";
+import { isGitRepo, isHookInstalled, isHookUpToDate, hasExistingHook, hasRemote, installPostCommitHook, initGitRepo, commitAll, HOOK_VERSION, getCoreHooksPath } from "../lib/git.js";
 import { checkQmdStatus } from "../lib/qmd-status.js";
 
-type FixId = "types" | "completions" | "obsidian-base" | "qmd" | "git-hook";
+type FixId = "types" | "completions" | "obsidian-base" | "qmd" | "git-hook" | "git-init" | "git-hook-outdated";
 
 export async function runDoctorCheck(
   opts: { fix?: boolean; program?: Command } = {},
@@ -67,7 +67,14 @@ export async function runDoctorCheck(
     }
 
     if (isHookInstalled(libPath)) {
-      console.log(status.ok(`Post-commit hook installed (v${HOOK_VERSION})`));
+      if (isHookUpToDate(libPath)) {
+        console.log(status.ok(`Post-commit hook installed (v${HOOK_VERSION})`));
+      } else {
+        console.log(status.warn(`Post-commit hook outdated (current: v${HOOK_VERSION})`));
+        console.log(`      Fix: snip doctor --fix`);
+        fixes.add("git-hook-outdated");
+        issues++;
+      }
     } else {
       console.log(status.warn("Post-commit hook missing"));
       console.log(`      Fix: snip doctor --fix`);
@@ -95,7 +102,8 @@ export async function runDoctorCheck(
     }
   } else {
     console.log(status.warn("No git repository"));
-    console.log(`      Git tracking will be initialized on next snip command`);
+    console.log(`      Fix: snip doctor --fix`);
+    fixes.add("git-init");
     issues++;
   }
 
@@ -315,10 +323,27 @@ export async function runDoctorCheck(
       }
     }
 
-    if (fixes.has("git-hook")) {
+    if (fixes.has("git-init")) {
+      console.log(fmt.dim("Running: initialize git repository"));
+      initGitRepo(libPath);
+      installPostCommitHook(libPath);
+      commitAll(libPath, "snip: initialize git tracking");
+      console.log(status.ok("Git repository initialized"));
+      console.log(status.ok("Post-commit hook installed"));
+      console.log("");
+    }
+
+    if (fixes.has("git-hook") && !fixes.has("git-init")) {
       console.log(fmt.dim("Running: install post-commit hook"));
       installPostCommitHook(libPath);
       console.log(status.ok("Post-commit hook installed"));
+      console.log("");
+    }
+
+    if (fixes.has("git-hook-outdated")) {
+      console.log(fmt.dim("Running: update post-commit hook"));
+      installPostCommitHook(libPath);
+      console.log(status.ok(`Post-commit hook updated to v${HOOK_VERSION}`));
       console.log("");
     }
 

@@ -162,6 +162,42 @@ describe("doctor — Git section", () => {
     expect(output).toContain("Post-commit hook missing");
   });
 
+  it("warns when hook is installed but outdated", () => {
+    execFileSync("git", ["init"], { cwd: libDir, encoding: "utf-8" });
+    const hooksDir = resolve(libDir, ".git", "hooks");
+    mkdirSync(hooksDir, { recursive: true });
+    writeFileSync(
+      resolve(hooksDir, "post-commit"),
+      `#!/usr/bin/env bash\n# >>> snip-hook-start >>>\n# Installed by snip v0.0.1\necho "hook"\n# <<< snip-hook-end <<<\n`,
+      { mode: 0o755 },
+    );
+
+    const output = snipDoctor(testDir, libDir);
+    expect(output).toContain("outdated");
+    expect(output).toContain("doctor --fix");
+  });
+
+  it("--fix updates an outdated hook", () => {
+    execFileSync("git", ["init"], { cwd: libDir, encoding: "utf-8" });
+    const hooksDir = resolve(libDir, ".git", "hooks");
+    mkdirSync(hooksDir, { recursive: true });
+    writeFileSync(
+      resolve(hooksDir, "post-commit"),
+      `#!/usr/bin/env bash\n# >>> snip-hook-start >>>\n# Installed by snip v0.0.1\necho "hook"\n# <<< snip-hook-end <<<\n`,
+      { mode: 0o755 },
+    );
+
+    const output = snipDoctor(testDir, libDir, ["--fix"]);
+    expect(output).toContain("Post-commit hook updated");
+  });
+
+  it("--fix initializes git repo when missing", () => {
+    // No git init — library is just a plain directory
+    const output = snipDoctor(testDir, libDir, ["--fix"]);
+    expect(output).toContain("Git repository initialized");
+    expect(output).toContain("Post-commit hook installed");
+  });
+
   it("reports hook installed when core.hooksPath has snip hook", () => {
     execFileSync("git", ["init"], { cwd: libDir, encoding: "utf-8" });
     const customHooksDir = resolve(libDir, "custom-hooks");

@@ -15,6 +15,7 @@ import {
   isHookInstalled,
   hasExistingHook,
   HOOK_VERSION,
+  isHookUpToDate,
 } from "../../src/lib/git.js";
 
 let tempDir: string;
@@ -348,6 +349,30 @@ describe("installPostCommitHook — core.hooksPath", () => {
 
     const defaultHook = join(tempDir, ".git", "hooks", "post-commit");
     expect(existsSync(defaultHook)).toBe(false);
+  });
+});
+
+describe("isHookUpToDate", () => {
+  beforeEach(() => {
+    initRepoWithCommit();
+  });
+
+  it("returns true when hook has current version", () => {
+    installPostCommitHook(tempDir);
+    expect(isHookUpToDate(tempDir)).toBe(true);
+  });
+
+  it("returns false when hook has old version", () => {
+    installPostCommitHook(tempDir);
+    const hp = join(tempDir, ".git", "hooks", "post-commit");
+    let content = readFileSync(hp, "utf8");
+    content = content.replace(`snip v${HOOK_VERSION}`, "snip v0.0.1");
+    writeFileSync(hp, content, { mode: 0o755 });
+    expect(isHookUpToDate(tempDir)).toBe(false);
+  });
+
+  it("returns false when no hook exists", () => {
+    expect(isHookUpToDate(tempDir)).toBe(false);
   });
 });
 

@@ -143,6 +143,16 @@ function isHookCurrent(content: string): boolean {
   return content.includes(`snip v${HOOK_VERSION}`);
 }
 
+/** Check if the installed hook is the current version */
+export function isHookUpToDate(libraryPath: string): boolean {
+  const path = hookPath(libraryPath);
+  if (!existsSync(path)) {
+    return false;
+  }
+  const content = readFileSync(path, "utf8");
+  return content.includes(HOOK_START) && isHookCurrent(content);
+}
+
 export function installPostCommitHook(libraryPath: string): void {
   const path = hookPath(libraryPath);
   const hooksDir = getHooksDir(libraryPath);
