@@ -3,14 +3,19 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { configExists, loadConfig, getLibraryPath, getConfigPath } from "../lib/config.js";
-import { isQmdInstalled, getCollectionPath } from "../lib/qmd.js";
+import { isQmdInstalled, getCollectionPath, registerCollection, updateAndEmbed } from "../lib/qmd.js";
 import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../lib/obsidian.js";
 import { getAllSnippets } from "../lib/resolve.js";
-import { detectShell, getCompletionPath } from "./install.js";
+import { detectShell, getCompletionPath, installShellCompletions } from "./install.js";
 import { fmt, status } from "../lib/format.js";
 
-export async function runDoctorCheck(): Promise<void> {
+type FixId = "types" | "completions" | "obsidian-base" | "qmd";
+
+export async function runDoctorCheck(
+  opts: { fix?: boolean; program?: Command } = {},
+): Promise<void> {
   let issues = 0;
+  const fixes = new Set<FixId>();
 
   // 1. Config
   console.log(fmt.bold("Config:"));
@@ -38,6 +43,7 @@ export async function runDoctorCheck(): Promise<void> {
       } else {
         console.log(status.warn(`${type}/ directory missing`));
         console.log(`      Fix: snip config:types:fix`);
+        fixes.add("types");
         issues++;
       }
     }
@@ -91,11 +97,13 @@ export async function runDoctorCheck(): Promise<void> {
           if (!hasFpath) {
             console.log(status.warn("~/.zshrc missing fpath for completions directory"));
             console.log(`      Fix: snip install completions`);
+            fixes.add("completions");
             issues++;
           }
           if (!hasCompinit) {
             console.log(status.warn("~/.zshrc missing compinit"));
             console.log(`      Fix: snip install completions`);
+            fixes.add("completions");
             issues++;
           }
         }
@@ -126,6 +134,7 @@ export async function runDoctorCheck(): Promise<void> {
     }
   } else if (completionPath) {
     console.log(status.info(`${shell} completions not installed. Run: snip install completions`));
+    fixes.add("completions");
   } else {
     console.log(status.info(`Could not determine completion path for shell: ${shell}`));
   }
@@ -158,6 +167,7 @@ export async function runDoctorCheck(): Promise<void> {
         } else {
           console.log(status.warn(`${type}/${label}.base missing`));
           console.log(`      Fix: snip install obsidian`);
+          fixes.add("obsidian-base");
           issues++;
         }
       }
@@ -185,6 +195,7 @@ export async function runDoctorCheck(): Promise<void> {
     if (!collectionPath) {
       console.log(status.warn(`qmd collection "${collectionName}" not registered`));
       console.log(`      Fix: snip install qmd`);
+      fixes.add("qmd");
       issues++;
     } else {
       console.log(status.ok(`Collection "${collectionName}" registered`));
@@ -192,10 +203,12 @@ export async function runDoctorCheck(): Promise<void> {
       if (!existsSync(collectionPath)) {
         console.log(status.warn(`Collection path does not exist: ${collectionPath}`));
         console.log(`      Fix: snip install qmd`);
+        fixes.add("qmd");
         issues++;
       } else if (collectionPath !== libPath) {
         console.log(status.warn(`Collection path mismatch: ${collectionPath} (expected ${libPath})`));
         console.log(`      Fix: snip install qmd`);
+        fixes.add("qmd");
         issues++;
       } else {
         console.log(status.ok(`Collection path matches library: ${collectionPath}`));
@@ -227,15 +240,57 @@ export async function runDoctorCheck(): Promise<void> {
     console.log(`      Install: https://ollama.ai`);
   }
 
-  // Summary
+  // Summary & auto-fix
   console.log("");
   if (issues === 0) {
     console.log(fmt.greenBold("All checks passed!"));
+  } else if (opts.fix && fixes.size > 0) {
+    console.log(fmt.bold(`Fixing ${fixes.size} auto-fixable issue(s)...\n`));
+
+    if (fixes.has("types")) {
+      console.log(fmt.dim("Running: snip config:types:fix"));
+      const { configTypesFixCommand } = await import("./config.js");
+      await configTypesFixCommand.parseAsync([], { from: "user" });
+      console.log("");
+    }
+
+    if (fixes.has("completions") && opts.program) {
+      console.log(fmt.dim("Running: snip install completions"));
+      await installShellCompletions(opts.program);
+      console.log("");
+    }
+
+    if (fixes.has("obsidian-base")) {
+      // Reuse config:types:fix — it creates both dirs and .base files
+      if (!fixes.has("types")) {
+        console.log(fmt.dim("Running: snip config:types:fix"));
+        const { configTypesFixCommand } = await import("./config.js");
+        await configTypesFixCommand.parseAsync([], { from: "user" });
+        console.log("");
+      }
+    }
+
+    if (fixes.has("qmd")) {
+      console.log(fmt.dim("Running: snip install qmd"));
+      await registerCollection(libPath, config.qmd.collectionName);
+      await updateAndEmbed();
+      console.log(status.ok("qmd collection fixed"));
+      console.log("");
+    }
+
+    console.log(fmt.greenBold("Auto-fix complete. Run snip doctor again to verify."));
   } else {
     console.log(fmt.yellowBold(`${issues} issue(s) found.`));
+    if (fixes.size > 0) {
+      console.log(fmt.dim(`${fixes.size} auto-fixable. Run: snip doctor --fix`));
+    }
   }
 }
 
 export const doctorCommand = new Command("doctor")
   .description("Check health of snippet library and integrations")
-  .action(runDoctorCheck);
+  .option("--fix", "Auto-fix issues that can be resolved without user input")
+  .action(async (cmdOpts: { fix?: boolean }) => {
+    const program = doctorCommand.parent ?? undefined;
+    await runDoctorCheck({ fix: cmdOpts.fix, program });
+  });
