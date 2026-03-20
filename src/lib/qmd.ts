@@ -4,19 +4,30 @@ import { loadConfig } from "./config.js";
 
 const execFileAsync = promisify(execFile);
 
-/** Run a qmd command with all output suppressed. Resolves when process exits. */
-function spawnSilent(
+interface SpawnQmdResult {
+  exitCode: number;
+  stderr: string;
+}
+
+/** Run a qmd command, capturing stderr and exit code. Stdout is suppressed. */
+function spawnQmd(
   args: string[],
   timeout: number,
-): Promise<void> {
+): Promise<SpawnQmdResult> {
   return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
     const child = spawn("qmd", args, {
-      stdio: "ignore",
+      stdio: ["ignore", "ignore", "pipe"],
       timeout,
       env: { ...process.env, NO_COLOR: "1" },
     });
-    child.on("close", () => resolve());
-    child.on("error", () => resolve());
+    child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk));
+    child.on("close", (code) =>
+      resolve({ exitCode: code ?? 1, stderr: Buffer.concat(chunks).toString().trim() }),
+    );
+    child.on("error", (err) =>
+      resolve({ exitCode: 1, stderr: err.message }),
+    );
   });
 }
 
@@ -78,13 +89,19 @@ export async function registerCollection(
 export async function embed(): Promise<void> {
   if (!(await ensureQmd())) return;
   const config = loadConfig();
-  await spawnSilent(["embed", "-c", config.qmd.collectionName], 120000);
+  const result = await spawnQmd(["embed", "-c", config.qmd.collectionName], 120000);
+  if (result.exitCode !== 0) {
+    console.error(`qmd embed failed: ${result.stderr || `exit code ${result.exitCode}`}`);
+  }
 }
 
 export async function update(): Promise<void> {
   if (!(await ensureQmd())) return;
   const config = loadConfig();
-  await spawnSilent(["update", "-c", config.qmd.collectionName], 60000);
+  const result = await spawnQmd(["update", "-c", config.qmd.collectionName], 60000);
+  if (result.exitCode !== 0) {
+    console.error(`qmd update failed: ${result.stderr || `exit code ${result.exitCode}`}`);
+  }
 }
 
 export async function search(
