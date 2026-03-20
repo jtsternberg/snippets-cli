@@ -8,7 +8,7 @@ import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../li
 import { getAllSnippets } from "../lib/resolve.js";
 import { detectShell, getCompletionPath, installShellCompletions } from "./install.js";
 import { fmt, status } from "../lib/format.js";
-import { isGitRepo, isHookInstalled, hasExistingHook, hasRemote, installPostCommitHook, HOOK_VERSION } from "../lib/git.js";
+import { isGitRepo, isHookInstalled, hasExistingHook, hasRemote, installPostCommitHook, HOOK_VERSION, getCoreHooksPath } from "../lib/git.js";
 import { checkQmdStatus } from "../lib/qmd-status.js";
 
 type FixId = "types" | "completions" | "obsidian-base" | "qmd" | "git-hook";
@@ -60,6 +60,11 @@ export async function runDoctorCheck(
   console.log(fmt.bold("\nGit:"));
   if (isGitRepo(libPath)) {
     console.log(status.ok("Repository initialized"));
+
+    const coreHooksPath = getCoreHooksPath(libPath);
+    if (coreHooksPath) {
+      console.log(status.info(`core.hooksPath is set to: ${coreHooksPath}`));
+    }
 
     if (isHookInstalled(libPath)) {
       console.log(status.ok(`Post-commit hook installed (v${HOOK_VERSION})`));

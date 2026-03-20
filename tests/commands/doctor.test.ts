@@ -147,4 +147,38 @@ describe("doctor — Git section", () => {
     const output = snipDoctor(testDir, libDir);
     expect(output).toContain("Git:");
   });
+
+  it("warns when core.hooksPath is set and snip hook is not there", () => {
+    execFileSync("git", ["init"], { cwd: libDir, encoding: "utf-8" });
+    const customHooksDir = resolve(libDir, "custom-hooks");
+    mkdirSync(customHooksDir, { recursive: true });
+    execFileSync("git", ["config", "core.hooksPath", customHooksDir], {
+      cwd: libDir,
+      encoding: "utf-8",
+    });
+
+    const output = snipDoctor(testDir, libDir);
+    expect(output).toContain("core.hooksPath");
+    expect(output).toContain("Post-commit hook missing");
+  });
+
+  it("reports hook installed when core.hooksPath has snip hook", () => {
+    execFileSync("git", ["init"], { cwd: libDir, encoding: "utf-8" });
+    const customHooksDir = resolve(libDir, "custom-hooks");
+    mkdirSync(customHooksDir, { recursive: true });
+    execFileSync("git", ["config", "core.hooksPath", customHooksDir], {
+      cwd: libDir,
+      encoding: "utf-8",
+    });
+
+    // Install hook in the custom hooks dir
+    writeFileSync(
+      resolve(customHooksDir, "post-commit"),
+      `#!/usr/bin/env bash\n# >>> snip-hook-start >>>\n# Installed by snip v1.4.0\necho "hook"\n# <<< snip-hook-end <<<\n`,
+      { mode: 0o755 },
+    );
+
+    const output = snipDoctor(testDir, libDir);
+    expect(output).toContain("Post-commit hook installed");
+  });
 });

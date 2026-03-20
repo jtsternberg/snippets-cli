@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 export const HOOK_VERSION = "1.4.0";
 
@@ -67,13 +67,40 @@ export function commitAll(libraryPath: string, message: string): void {
   gitExec(["commit", "-m", message], libraryPath);
 }
 
+/** Returns the core.hooksPath value if set, or null */
+export function getCoreHooksPath(libraryPath: string): string | null {
+  try {
+    const customPath = gitExec(["config", "core.hooksPath"], libraryPath).trim();
+    return customPath || null;
+  } catch {
+    return null;
+  }
+}
+
 export function hasRemote(libraryPath: string): boolean {
   const remotes = gitExec(["remote"], libraryPath).trim();
   return remotes.length > 0;
 }
 
+/**
+ * Resolve the hooks directory, respecting core.hooksPath if set.
+ * Falls back to .git/hooks.
+ */
+function getHooksDir(libraryPath: string): string {
+  try {
+    const customPath = gitExec(["config", "core.hooksPath"], libraryPath).trim();
+    if (customPath) {
+      // core.hooksPath can be relative to the repo root
+      return resolve(libraryPath, customPath);
+    }
+  } catch {
+    // Not set — use default
+  }
+  return join(libraryPath, ".git", "hooks");
+}
+
 function hookPath(libraryPath: string): string {
-  return join(libraryPath, ".git", "hooks", "post-commit");
+  return join(getHooksDir(libraryPath), "post-commit");
 }
 
 export function isHookInstalled(libraryPath: string): boolean {
@@ -118,7 +145,7 @@ function isHookCurrent(content: string): boolean {
 
 export function installPostCommitHook(libraryPath: string): void {
   const path = hookPath(libraryPath);
-  const hooksDir = join(libraryPath, ".git", "hooks");
+  const hooksDir = getHooksDir(libraryPath);
   mkdirSync(hooksDir, { recursive: true });
 
   if (!existsSync(path)) {

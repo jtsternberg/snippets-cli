@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, unlinkSync, statSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, unlinkSync, statSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -296,6 +296,58 @@ describe("installPostCommitHook — hook updates", () => {
 
     const contentAfter = readFileSync(hookPath, "utf8");
     expect(contentAfter).toBe(contentBefore);
+  });
+});
+
+describe("installPostCommitHook — core.hooksPath", () => {
+  beforeEach(() => {
+    initRepoWithCommit();
+  });
+
+  it("installs hook to core.hooksPath directory when configured", () => {
+    const customHooksDir = join(tempDir, "custom-hooks");
+    mkdirSync(customHooksDir, { recursive: true });
+    git("config", "core.hooksPath", customHooksDir);
+
+    installPostCommitHook(tempDir);
+
+    const hookFile = join(customHooksDir, "post-commit");
+    const content = readFileSync(hookFile, "utf8");
+    expect(content).toContain("# >>> snip-hook-start >>>");
+    expect(content).toContain(`snip v${HOOK_VERSION}`);
+  });
+
+  it("isHookInstalled checks core.hooksPath when configured", () => {
+    const customHooksDir = join(tempDir, "custom-hooks");
+    mkdirSync(customHooksDir, { recursive: true });
+    git("config", "core.hooksPath", customHooksDir);
+
+    expect(isHookInstalled(tempDir)).toBe(false);
+
+    installPostCommitHook(tempDir);
+    expect(isHookInstalled(tempDir)).toBe(true);
+  });
+
+  it("hasExistingHook checks core.hooksPath when configured", () => {
+    const customHooksDir = join(tempDir, "custom-hooks");
+    mkdirSync(customHooksDir, { recursive: true });
+    git("config", "core.hooksPath", customHooksDir);
+
+    // Write a pre-existing hook in the custom dir
+    writeFileSync(join(customHooksDir, "post-commit"), '#!/bin/bash\necho "custom"\n', { mode: 0o755 });
+
+    expect(hasExistingHook(tempDir)).toBe(true);
+  });
+
+  it("does NOT install to .git/hooks when core.hooksPath is set", () => {
+    const customHooksDir = join(tempDir, "custom-hooks");
+    mkdirSync(customHooksDir, { recursive: true });
+    git("config", "core.hooksPath", customHooksDir);
+
+    installPostCommitHook(tempDir);
+
+    const defaultHook = join(tempDir, ".git", "hooks", "post-commit");
+    expect(existsSync(defaultHook)).toBe(false);
   });
 });
 
