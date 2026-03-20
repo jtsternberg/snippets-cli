@@ -148,3 +148,90 @@ describe("commit window — QMD error surfacing", () => {
     expect(existsSync(join(libDir, ".snip-qmd-status"))).toBe(false);
   });
 });
+
+describe("commit window — full E2E workflow", () => {
+  let testDir: string;
+  let libDir: string;
+
+  beforeEach(() => {
+    ({ testDir, libDir } = setupSnipEnv());
+  });
+
+  afterEach(() => {
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  it("init → add → rename → rm produces correct git history", { timeout: 30000 }, () => {
+    // init already done in setup — creates initial commit
+    const countAfterInit = gitLogCount(libDir);
+    expect(countAfterInit).toBe(1);
+
+    // add
+    snip(["add", "--title", "Workflow Test", "--content", "hello", "--lang", "bash"], testDir, libDir);
+    expect(gitLogCount(libDir)).toBe(countAfterInit + 1);
+    expect(gitLog(libDir)).toContain("snip: add");
+
+    // rename
+    snip(["rename", "workflow-test", "Renamed Workflow"], testDir, libDir);
+    expect(gitLogCount(libDir)).toBe(countAfterInit + 2);
+    expect(gitLog(libDir)).toContain("snip: rename");
+
+    // rm
+    snip(["rm", "renamed-workflow", "--force"], testDir, libDir);
+    expect(gitLogCount(libDir)).toBe(countAfterInit + 3);
+    expect(gitLog(libDir)).toContain("snip: rm");
+  });
+
+  it("pre-existing repo preserves existing commits", { timeout: 15000 }, () => {
+    // Create a manual repo with existing commits
+    const td = mkdtempSync(join(tmpdir(), "snip-preexist-"));
+    const ld = resolve(td, "snippets");
+    mkdirSync(resolve(ld, "snippets"), { recursive: true });
+    mkdirSync(resolve(td, ".config", "snip"), { recursive: true });
+
+    writeFileSync(
+      resolve(td, ".config", "snip", "config.json"),
+      JSON.stringify({
+        libraryPath: ld,
+        types: ["snippets"],
+        defaultType: "snippets",
+        editor: "true",
+        llm: { provider: "ollama", ollamaModel: "m", ollamaHost: "http://localhost:11434", fallbackProvider: null, openaiApiKey: null, anthropicApiKey: null },
+        qmd: { collectionName: "snip" },
+        alfred: { maxResults: 20 },
+      }),
+      "utf-8",
+    );
+
+    // Init a real git repo with a pre-existing commit
+    execFileSync("git", ["init"], { cwd: ld });
+    writeFileSync(resolve(ld, "README.md"), "# My Snippets\n", "utf-8");
+    execFileSync("git", ["add", "-A"], { cwd: ld });
+    execFileSync("git", ["commit", "-m", "initial manual commit"], { cwd: ld });
+    const countBefore = gitLogCount(ld);
+
+    // Now use snip — preAction should install hook but not clobber history
+    snip(["add", "--title", "New Snippet", "--content", "test", "--lang", "bash"], td, ld);
+    const countAfter = gitLogCount(ld);
+
+    // Should have 1 new commit (the add), not lose the existing one
+    expect(countAfter).toBe(countBefore + 1);
+
+    // Original commit should still be in the log
+    expect(gitLog(ld)).toContain("initial manual commit");
+
+    rmSync(td, { recursive: true, force: true });
+  });
+
+  it("non-mutating commands do not create commits", { timeout: 15000 }, () => {
+    snip(["add", "--title", "Read Only", "--content", "stable", "--lang", "bash"], testDir, libDir);
+    const countAfterAdd = gitLogCount(libDir);
+
+    // list, show, copy — none should commit
+    snip(["list"], testDir, libDir);
+    expect(gitLogCount(libDir)).toBe(countAfterAdd);
+
+    snip(["show", "read-only"], testDir, libDir);
+    expect(gitLogCount(libDir)).toBe(countAfterAdd);
+  });
+});
