@@ -288,6 +288,28 @@ describe("installPostCommitHook — hook updates", () => {
     expect(updated).not.toContain("v0.0.1");
   });
 
+  it("handles corrupted hook with HOOK_START but no HOOK_END", () => {
+    const hooksDir = join(tempDir, ".git", "hooks");
+    mkdirSync(hooksDir, { recursive: true });
+
+    // Create a corrupted hook — start marker but no end marker
+    const before = '#!/bin/bash\necho "user hook"\n';
+    const corrupted = "# >>> snip-hook-start >>>\n# Installed by snip v0.0.1\nbroken content\n";
+
+    writeFileSync(join(hooksDir, "post-commit"), before + corrupted, { mode: 0o755 });
+
+    // Should not throw or truncate — should clean up and re-install
+    installPostCommitHook(tempDir);
+
+    const result = readFileSync(join(hooksDir, "post-commit"), "utf8");
+    expect(result).toContain('echo "user hook"');
+    expect(result).toContain(`snip v${HOOK_VERSION}`);
+    expect(result).toContain("# >>> snip-hook-start >>>");
+    expect(result).toContain("# <<< snip-hook-end <<<");
+    expect(result).not.toContain("v0.0.1");
+    expect(result).not.toContain("broken content");
+  });
+
   it("is a no-op when hook is already current", () => {
     installPostCommitHook(tempDir);
     const hookPath = join(tempDir, ".git", "hooks", "post-commit");

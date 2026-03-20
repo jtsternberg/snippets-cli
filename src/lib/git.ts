@@ -174,9 +174,16 @@ export function installPostCommitHook(libraryPath: string): void {
     }
     // Replace the outdated section
     const startIdx = existing.indexOf(HOOK_START);
-    const endIdx = existing.indexOf(HOOK_END) + HOOK_END.length;
+    const endIdx = existing.indexOf(HOOK_END);
+    if (endIdx === -1) {
+      // Corrupted hook — HOOK_START without HOOK_END. Remove partial section and re-append.
+      const before = existing.substring(0, startIdx);
+      const cleaned = before.endsWith("\n") ? before : before + "\n";
+      writeFileSync(path, cleaned + HOOK_BODY + "\n", { mode: 0o755 });
+      return;
+    }
     const before = existing.substring(0, startIdx);
-    const after = existing.substring(endIdx);
+    const after = existing.substring(endIdx + HOOK_END.length);
     const updated = before + HOOK_BODY + after;
     writeFileSync(path, updated, { mode: 0o755 });
     return;
