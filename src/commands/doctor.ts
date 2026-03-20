@@ -84,15 +84,18 @@ export async function runDoctorCheck(): Promise<void> {
         } else {
           if (!hasFpath) {
             console.log(status.warn("~/.zshrc missing fpath for completions directory"));
+            console.log(`      Fix: snip install completions`);
             issues++;
           }
           if (!hasCompinit) {
             console.log(status.warn("~/.zshrc missing compinit"));
+            console.log(`      Fix: snip install completions`);
             issues++;
           }
         }
       } else {
         console.log(status.warn("No ~/.zshrc found — completions won't load"));
+        console.log(`      Create ~/.zshrc first, then run: snip install completions`);
         issues++;
       }
     } else if (shell === "bash") {
@@ -103,11 +106,12 @@ export async function runDoctorCheck(): Promise<void> {
           console.log(status.ok("~/.bashrc sources completions"));
         } else {
           console.log(status.warn(`~/.bashrc may not source ${completionPath}`));
-          console.log(`      Add: [ -f ${completionPath} ] && source ${completionPath}`);
+          console.log(`      Add to ~/.bashrc: [ -f ${completionPath} ] && source ${completionPath}`);
           issues++;
         }
       } else {
         console.log(status.warn("No ~/.bashrc found — completions won't load"));
+        console.log(`      Create ~/.bashrc, then add: [ -f ${completionPath} ] && source ${completionPath}`);
         issues++;
       }
     } else if (shell === "fish") {
