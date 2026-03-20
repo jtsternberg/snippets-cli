@@ -12,6 +12,7 @@ import {
   configCommand,
   configTypesAddCommand,
   configTypesRemoveCommand,
+  configTypesFixCommand,
   configLibraryCommand,
   configLlmCommand,
   configLlmProviderCommand,
@@ -52,6 +53,7 @@ program.addCommand(tagsCommand);
 program.addCommand(configCommand);
 program.addCommand(configTypesAddCommand);
 program.addCommand(configTypesRemoveCommand);
+program.addCommand(configTypesFixCommand);
 program.addCommand(configLibraryCommand);
 program.addCommand(configLlmCommand);
 program.addCommand(configLlmProviderCommand);

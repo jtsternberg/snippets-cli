@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { EXIT_CODES } from "../types/index.js";
 import type { LlmProviderName } from "../types/index.js";
+import { fmt, status } from "../lib/format.js";
 
 export const configCommand = new Command("config")
   .description("View or modify configuration")
@@ -125,6 +126,56 @@ export const configTypesRemoveCommand = new Command("config:types:remove")
 
     console.log(`Removed type "${name}" from config.`);
     console.log(`Note: the directory was not deleted. Remove it manually if needed.`);
+  });
+
+// Subcommand for fixing missing type directories and .base files
+export const configTypesFixCommand = new Command("config:types:fix")
+  .description("Recreate missing type directories and Obsidian .base files")
+  .action(async () => {
+    const config = loadConfig();
+    const libPath = getLibraryPath(config);
+    assertLibraryExists(libPath);
+
+    const __filename = fileURLToPath(import.meta.url);
+    const assetsDir = resolve(dirname(__filename), "../assets");
+    const templatePath = resolve(assetsDir, "sample.base");
+    const hasTemplate = existsSync(templatePath);
+    const template = hasTemplate ? readFileSync(templatePath, "utf-8") : null;
+
+    let fixedDirs = 0;
+    let fixedBases = 0;
+
+    console.log(fmt.bold("Checking type directories"));
+
+    for (const typeName of config.types) {
+      const typeDir = resolve(libPath, typeName);
+      const label = typeName.charAt(0).toUpperCase() + typeName.slice(1);
+      const basePath = resolve(typeDir, `${label}.base`);
+
+      if (!existsSync(typeDir)) {
+        mkdirSync(typeDir, { recursive: true });
+        fixedDirs++;
+        console.log(status.ok(`${typeName}/ (created)`));
+      } else if (!existsSync(basePath)) {
+        // Directory exists but .base is missing — only report .base fix below
+        console.log(status.ok(`${typeName}/`));
+      } else {
+        console.log(status.ok(`${typeName}/`));
+        continue;
+      }
+
+      if (!existsSync(basePath) && template) {
+        writeFileSync(basePath, template.replace("{{TYPE}}", typeName), "utf-8");
+        fixedBases++;
+        console.log(status.ok(`  ${label}.base (created)`));
+      }
+    }
+
+    if (fixedDirs === 0 && fixedBases === 0) {
+      console.log(fmt.dim("\nAll type directories and .base files are present. Nothing to fix."));
+    } else {
+      console.log(`\nFixed: ${fixedDirs} director${fixedDirs === 1 ? "y" : "ies"}, ${fixedBases} .base file${fixedBases === 1 ? "" : "s"}.`);
+    }
   });
 
 // Subcommand for setting library path (alias for: snip config libraryPath <path>)
