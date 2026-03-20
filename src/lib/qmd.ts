@@ -1,4 +1,7 @@
 import { execFile, spawn } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { homedir } from "node:os";
 import { promisify } from "node:util";
 import { loadConfig } from "./config.js";
 
@@ -68,6 +71,18 @@ export async function ensureQmd(): Promise<boolean> {
   return true;
 }
 
+const QMD_CONFIG_PATH = resolve(homedir(), ".config/qmd/index.yml");
+
+/** Read the registered path for a qmd collection from its config file. */
+export function getCollectionPath(name: string): string | null {
+  if (!existsSync(QMD_CONFIG_PATH)) return null;
+  const content = readFileSync(QMD_CONFIG_PATH, "utf-8");
+  // Match "  <name>:\n    path: <value>" in the YAML
+  const re = new RegExp(`^  ${name}:\\s*\\n    path:\\s*(.+)$`, "m");
+  const match = content.match(re);
+  return match ? match[1].trim() : null;
+}
+
 export async function registerCollection(
   path: string,
   name: string,
@@ -78,8 +93,16 @@ export async function registerCollection(
     await execFileAsync("qmd", ["collection", "add", path, "--name", name]);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    // Collection may already exist
     if (message.includes("already exists")) {
+      // Verify existing collection points to the correct path
+      const existingPath = getCollectionPath(name);
+      if (existingPath && existingPath !== path) {
+        console.error(
+          `qmd collection "${name}" points to ${existingPath}, expected ${path}. Re-registering...`,
+        );
+        await execFileAsync("qmd", ["collection", "remove", name]);
+        await execFileAsync("qmd", ["collection", "add", path, "--name", name]);
+      }
       return;
     }
     throw err;
