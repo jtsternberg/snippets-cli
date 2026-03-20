@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { configExists, loadConfig, getLibraryPath, getConfigPath } from "../lib/config.js";
-import { isQmdInstalled } from "../lib/qmd.js";
+import { isQmdInstalled, getCollectionPath } from "../lib/qmd.js";
 import { getAllSnippets } from "../lib/resolve.js";
 import { detectShell, getCompletionPath } from "./install.js";
 import { fmt, status } from "../lib/format.js";
@@ -124,6 +124,28 @@ export async function runDoctorCheck(): Promise<void> {
   const hasQmd = await isQmdInstalled();
   if (hasQmd) {
     console.log(status.ok("qmd is installed"));
+
+    const collectionName = config.qmd.collectionName;
+    const collectionPath = getCollectionPath(collectionName);
+
+    if (!collectionPath) {
+      console.log(status.warn(`qmd collection "${collectionName}" not registered. Run: snip init`));
+      issues++;
+    } else {
+      console.log(status.ok(`Collection "${collectionName}" registered`));
+
+      if (!existsSync(collectionPath)) {
+        console.log(status.warn(`Collection path does not exist: ${collectionPath}`));
+        console.log(`      Run: snip init to re-register`);
+        issues++;
+      } else if (collectionPath !== libPath) {
+        console.log(status.warn(`Collection path mismatch: ${collectionPath} (expected ${libPath})`));
+        console.log(`      Run: snip init --force to fix`);
+        issues++;
+      } else {
+        console.log(status.ok(`Collection path matches library: ${collectionPath}`));
+      }
+    }
   } else {
     console.log(status.info("qmd not installed (optional). Install: npm i -g @tobilu/qmd"));
   }
