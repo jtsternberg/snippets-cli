@@ -6,6 +6,7 @@ import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { assertLibraryExists, loadConfig, getLibraryPath, getConfigKeys } from "../lib/config.js";
 import { isObsidianInstalled, isObsidianCliAvailable, getVaultName } from "../lib/obsidian.js";
+import { isQmdInstalled, getCollectionPath, registerCollection, updateAndEmbed } from "../lib/qmd.js";
 import { fmt, status } from "../lib/format.js";
 
 interface CommandInfo {
@@ -121,7 +122,7 @@ ${commandList}
 ${caseBranches}
         install)
           local -a integrations
-          integrations=('completions:Install shell completions' 'alfred:Install Alfred workflow' 'obsidian:Set up Obsidian vault' 'claude-code:Install Claude Code plugin')
+          integrations=('completions:Install shell completions' 'alfred:Install Alfred workflow' 'obsidian:Set up Obsidian vault' 'claude-code:Install Claude Code plugin' 'qmd:Install/fix qmd semantic search')
           _describe 'integration' integrations
           ;;
         config)
@@ -186,7 +187,7 @@ _snip_completions() {
       return 0
       ;;
     install)
-      COMPREPLY=( $(compgen -W "completions alfred obsidian claude-code" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "completions alfred obsidian claude-code qmd" -- "\${cur}") )
       return 0
       ;;
     config)
@@ -272,6 +273,7 @@ function generateFishCompletions(commands: CommandInfo[]): string {
     "complete -c snip -n '__fish_seen_subcommand_from install' -a alfred -d 'Install Alfred workflow'",
     "complete -c snip -n '__fish_seen_subcommand_from install' -a obsidian -d 'Set up Obsidian vault'",
     "complete -c snip -n '__fish_seen_subcommand_from install' -a claude-code -d 'Install Claude Code plugin'",
+    "complete -c snip -n '__fish_seen_subcommand_from install' -a qmd -d 'Install/fix qmd semantic search'",
   );
 
   // Config key completions
@@ -1286,12 +1288,52 @@ function installClaudeCode(): void {
   console.log(status.info("Agent: snippet-specialist for complex workflows"));
 }
 
+async function installQmd(): Promise<void> {
+  const config = loadConfig();
+  const libPath = getLibraryPath(config);
+  assertLibraryExists(libPath);
+
+  console.log(fmt.bold("qmd setup:\n"));
+
+  // 1. Check installation
+  const installed = await isQmdInstalled();
+  if (!installed) {
+    console.log(status.warn("qmd is not installed"));
+    console.log(`      Install with: npm i -g @tobilu/qmd`);
+    process.exit(1);
+  }
+  console.log(status.ok("qmd is installed"));
+
+  // 2. Check/fix collection registration
+  const collectionName = config.qmd.collectionName;
+  const existingPath = getCollectionPath(collectionName);
+
+  if (existingPath && existingPath === libPath) {
+    console.log(status.ok(`Collection "${collectionName}" registered at ${libPath}`));
+  } else if (existingPath) {
+    console.log(status.warn(`Collection "${collectionName}" points to ${existingPath}, fixing...`));
+    await registerCollection(libPath, collectionName);
+    console.log(status.ok(`Collection re-registered at ${libPath}`));
+  } else {
+    console.log(status.info(`Registering collection "${collectionName}"...`));
+    await registerCollection(libPath, collectionName);
+    console.log(status.ok(`Collection registered at ${libPath}`));
+  }
+
+  // 3. Update index and embed
+  console.log(status.info("Updating index and embeddings..."));
+  await updateAndEmbed();
+  console.log(status.ok("Index updated and embeddings generated"));
+
+  console.log(fmt.bold("\nDone!"));
+}
+
 export function createInstallCommand(program: Command): Command {
   return new Command("install")
     .description("Install integrations and extensions")
     .argument(
       "<integration>",
-      "Integration to install (completions, alfred, obsidian, claude-code)",
+      "Integration to install (completions, alfred, obsidian, claude-code, qmd)",
     )
     .argument("[shell]", "Shell type for completions (bash, zsh, fish)")
     .action(async (integration: string, shell?: string) => {
@@ -1318,9 +1360,13 @@ export function createInstallCommand(program: Command): Command {
           installClaudeCode();
           break;
 
+        case "qmd":
+          await installQmd();
+          break;
+
         default:
           console.error(
-            `Unknown integration: ${integration}. Available: completions, alfred, obsidian, claude-code`,
+            `Unknown integration: ${integration}. Available: completions, alfred, obsidian, claude-code, qmd`,
           );
           process.exit(1);
       }
