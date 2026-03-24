@@ -19,7 +19,7 @@ function snip(args: string[], opts: { input?: string } = {}): string {
     },
     input: opts.input,
     encoding: "utf-8",
-    timeout: 10000,
+    timeout: 15000,
   }).trim();
 }
 

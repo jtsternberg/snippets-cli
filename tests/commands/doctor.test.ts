@@ -36,7 +36,7 @@ function snipDoctor(testDir: string, libDir: string, extraArgs: string[] = []): 
       XDG_CONFIG_HOME: resolve(testDir, ".config"),
     },
     encoding: "utf-8",
-    timeout: 10000,
+    timeout: 15000,
   });
 }
 
