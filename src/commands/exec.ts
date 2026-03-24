@@ -5,9 +5,11 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { resolveSnippet, exitIfAmbiguous, exitIfFuzzy, exitIfNotFound } from "../lib/resolve.js";
 import { extractCopyContent } from "../lib/frontmatter.js";
-import { extractTemplateVariables, fillTemplateVariables } from "../lib/template.js";
+import { extractTemplateVariables, fillTemplateVariables, fillTemplateVariablesForShell } from "../lib/template.js";
 import { EXIT_CODES } from "../types/index.js";
 import { fmt } from "../lib/format.js";
+
+const SHELL_INTERPRETERS = new Set(["bash", "sh", "zsh", "fish"]);
 
 const LANG_CONFIG: Record<string, { shell: string; ext: string }> = {
   bash:       { shell: "bash",     ext: ".sh" },
@@ -42,6 +44,12 @@ export const execCommand = new Command("exec")
     const { snippet } = result;
     let code = extractCopyContent(snippet);
 
+    // Determine interpreter early so template substitution can be shell-aware.
+    const lang = snippet.frontmatter.language?.toLowerCase() || "";
+    const langConfig = LANG_CONFIG[lang];
+    const shell = opts.shell || langConfig?.shell || "bash";
+    const isShellInterpreter = SHELL_INTERPRETERS.has(shell.split(" ")[0]);
+
     // Substitute {{variables}} with positional args in order.
     // Variables with defaults use that default when no arg is provided.
     const templateVariables = extractTemplateVariables(code);
@@ -54,7 +62,11 @@ export const execCommand = new Command("exec")
         }
       }
 
-      code = fillTemplateVariables(code, variableValues);
+      // Use context-aware shell quoting for shell interpreters so that
+      // values containing spaces/metacharacters don't get word-split.
+      code = isShellInterpreter
+        ? fillTemplateVariablesForShell(code, variableValues)
+        : fillTemplateVariables(code, variableValues);
       // Remaining args after template substitution become positional args
       scriptArgs = scriptArgs.slice(Math.min(scriptArgs.length, templateVariables.length));
     }
@@ -63,11 +75,6 @@ export const execCommand = new Command("exec")
       console.error("Snippet has no code content to execute.");
       process.exit(EXIT_CODES.GENERAL_ERROR);
     }
-
-    // Determine interpreter
-    const lang = snippet.frontmatter.language?.toLowerCase() || "";
-    const langConfig = LANG_CONFIG[lang];
-    const shell = opts.shell || langConfig?.shell || "bash";
 
     if (opts.dryRun) {
       console.log(fmt.dim(`# ${snippet.frontmatter.title}`));
