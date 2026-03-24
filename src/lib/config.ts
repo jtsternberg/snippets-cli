@@ -3,8 +3,12 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import type { SnipConfig } from "../types/index.js";
 
-const CONFIG_DIR = resolve(homedir(), ".config", "snip");
-const CONFIG_PATH = resolve(CONFIG_DIR, "config.json");
+function getConfigDir(): string {
+  const xdg = process.env.XDG_CONFIG_HOME;
+  const base = xdg || resolve(homedir(), ".config");
+  return resolve(base, "snip");
+}
+
 
 export function getDefaultConfig(): SnipConfig {
   return {
@@ -37,11 +41,11 @@ export function getDefaultConfig(): SnipConfig {
 }
 
 export function getConfigPath(): string {
-  return CONFIG_PATH;
+  return resolve(getConfigDir(), "config.json");
 }
 
 export function configExists(): boolean {
-  return existsSync(CONFIG_PATH);
+  return existsSync(getConfigPath());
 }
 
 export function loadConfig(): SnipConfig {
@@ -51,7 +55,7 @@ export function loadConfig(): SnipConfig {
     return defaults;
   }
 
-  const raw = readFileSync(CONFIG_PATH, "utf-8");
+  const raw = readFileSync(getConfigPath(), "utf-8");
   const parsed = JSON.parse(raw) as Partial<SnipConfig>;
 
   return {
@@ -64,8 +68,8 @@ export function loadConfig(): SnipConfig {
 }
 
 export function saveConfig(config: SnipConfig): void {
-  mkdirSync(CONFIG_DIR, { recursive: true });
-  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n", "utf-8");
+  mkdirSync(getConfigDir(), { recursive: true });
+  writeFileSync(getConfigPath(), JSON.stringify(config, null, 2) + "\n", "utf-8");
 }
 
 export function getLibraryPath(config?: SnipConfig): string {

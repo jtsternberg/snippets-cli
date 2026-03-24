@@ -104,11 +104,6 @@ try {
 }
 
 beforeAll(() => {
-  execFileSync("npm", ["run", "build"], {
-    cwd: process.cwd(),
-    encoding: "utf-8",
-  });
-
   // Create library dirs and config
   mkdirSync(resolve(libDir, "snippets"), { recursive: true });
   mkdirSync(resolve(libDir, "prompts"), { recursive: true });

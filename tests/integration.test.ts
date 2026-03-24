@@ -50,8 +50,6 @@ beforeAll(() => {
     "utf-8",
   );
 
-  // Build before tests (in case dist is stale)
-  execFileSync("npm", ["run", "build"], { cwd: process.cwd(), encoding: "utf-8" });
 });
 
 afterAll(() => {
