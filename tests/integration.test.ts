@@ -333,6 +333,75 @@ describe("snip exec with default template variables", () => {
   });
 });
 
+describe("snip exec — shell quoting for template variables", () => {
+  beforeAll(() => {
+    // Bare template: variables are outside any quotes — needs shell quoting
+    snip([
+      "add",
+      "--title", "Shell Quote Bare Test",
+      "--lang", "bash",
+      "--content", "printf '%s\\n' {{file1}} {{file2}}",
+    ]);
+    // Inline template: variables inside double-quoted echo (no extra quoting needed)
+    snip([
+      "add",
+      "--title", "Shell Quote Inline Test",
+      "--lang", "bash",
+      "--content", 'echo "Hello {{name}}, welcome to {{place}}"',
+    ]);
+  });
+
+  afterAll(() => {
+    snip(["rm", "shell-quote-bare-test", "--force"]);
+    snip(["rm", "shell-quote-inline-test", "--force"]);
+  });
+
+  it("quotes values with spaces in bare argument context (dry-run)", () => {
+    const output = snip([
+      "exec", "shell-quote-bare-test", "--dry-run", "--",
+      "./simple.md", "./Email Series - Rework/file.md",
+    ]);
+    expect(output).toContain("./simple.md");
+    expect(output).toContain("'./Email Series - Rework/file.md'");
+  });
+
+  it("does NOT double-quote values inside existing double quotes (dry-run)", () => {
+    const output = snip([
+      "exec", "shell-quote-inline-test", "--dry-run", "--",
+      "John Doe", "the big city",
+    ]);
+    // Values should appear raw inside the double-quoted echo, no single quotes
+    expect(output).toContain('echo "Hello John Doe, welcome to the big city"');
+  });
+
+  it("executes correctly with spaces in bare-context template vars", () => {
+    // printf '%s\n' prints each arg on its own line.
+    // Without quoting, "Email Series - Rework/file.md" would word-split into 5 args.
+    // With quoting, it stays as 1 arg.
+    const output = snip([
+      "exec", "shell-quote-bare-test", "--",
+      "./simple.md", "./Email Series - Rework/file.md",
+    ]);
+    expect(output).toBe("./simple.md\n./Email Series - Rework/file.md");
+  });
+
+  it("executes correctly with spaces inside double-quoted context", () => {
+    const output = snip([
+      "exec", "shell-quote-inline-test", "--",
+      "John Doe", "the big city",
+    ]);
+    expect(output).toBe("Hello John Doe, welcome to the big city");
+  });
+
+  it("handles embedded single quotes in values", () => {
+    const output = snip([
+      "exec", "shell-quote-bare-test", "--",
+      "it's here", "that's there",
+    ]);
+    expect(output).toBe("it's here\nthat's there");
+  });
+});
+
 describe("snip run with default template variables", () => {
   beforeAll(() => {
     snip([
