@@ -26,10 +26,15 @@ export const addCommand = new Command("add")
   .option("--tags <tags>", "Comma-separated tags")
   .option("--title <title>", "Snippet title")
   .option("--from-clipboard", "Create snippet from clipboard content")
-  .option("--content <content>", "Snippet content (non-interactive)")
+  .option("--content <content>", "Snippet content (non-interactive)", undefined)
+  .option("--body <content>", "Alias for --content")
   .option("--provider <provider>", "LLM provider override (ollama, gemini, gemini-cli, claude, claude-cli, openai, openai-cli, auto)")
   .option("--debug", "Log LLM provider commands and responses")
   .action(async (contentArg, opts) => {
+    // Support --body as alias for --content
+    if (opts.body && !opts.content) {
+      opts.content = opts.body;
+    }
     // Support positional content arg as shorthand for --content
     if (contentArg && !opts.content) {
       opts.content = contentArg;
