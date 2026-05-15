@@ -4,6 +4,8 @@ dist/
 .DS_Store
 .env
 .beads/backup
+.beads/export-state.json
+.claude/worktrees/
 
 # Dolt database files (added by bd init)
 .dolt/
