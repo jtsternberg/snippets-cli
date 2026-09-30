@@ -4,7 +4,7 @@
   "description": "CLI snippet manager with semantic search and Obsidian-compatible markdown storage",
   "type": "module",
   "bin": {
-    "snip": "./dist/index.js"
+    "snip": "dist/index.js"
   },
   "scripts": {
     "build": "tsup",
