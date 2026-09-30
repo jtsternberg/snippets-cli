@@ -16,7 +16,7 @@ Search snippets by text with optional filters.
 
 ## Instructions
 
-1. If `--semantic` is specified, run: `snip search "<query>" --json`
+1. If `--semantic` is specified, run: `snip search "<query>" --semantic --json`
    - This uses vector/semantic search via qmd
 2. Otherwise, run: `snip find "<query>" --json`
    - Add filter flags if provided (--type, --tag, --lang)

@@ -109,9 +109,10 @@ Options:
 - `--json` - Output as JSON
 
 ### search
-Semantic search using vector embeddings (requires qmd).
+Ranked keyword search across title, tags, aliases, description, and body. `--semantic` switches to qmd (slower, requires qmd).
 ```bash
-snip search "error handling patterns"            # Default semantic search
+snip search "error handling"                     # Fast keyword search
+snip search "error handling patterns" --semantic # Semantic search via qmd
 snip search "retry logic" --max 5                # Limit results
 snip search "config management" --json           # JSON output
 snip search "auth flow" --mode vsearch           # Vector-only search
@@ -119,7 +120,8 @@ snip search "auth flow" --mode vsearch           # Vector-only search
 Options:
 - `--json` - Output as JSON
 - `-n`, `--max` - Maximum number of results
-- `--mode` - Search mode: `query` (default), `search`, or `vsearch`
+- `-s`, `--semantic` - Semantic search via qmd
+- `--mode` - qmd search mode, implies `--semantic`: `query` (default), `search`, or `vsearch`
 
 ## Templates
 

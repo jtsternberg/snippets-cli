@@ -51,7 +51,7 @@ snip init                          # Initialize library at ~/snippets
 snip add --from-clipboard          # Add snippet from clipboard
 snip add --type prompts --title "Code review" --lang prompt  # Add to prompt library
 snip add --title "My Script" --lang bash  # Add with metadata
-snip search "api helper"           # Semantic search
+snip search "api helper"           # Fast keyword search (--semantic for qmd)
 snip run my-prompt -- language=TypeScript  # Run prompt template with variables
 snip exec git-diff-name-only-from-branch   # Use placeholder defaults inside command snippets
 snip copy my-snippet               # Copy to clipboard
@@ -70,7 +70,7 @@ snip show my-snippet               # Display in terminal
 | `snip rm <name>` | Delete a snippet |
 | `snip list` | List snippets (`--type`, `--tag`, `--lang`, `--json`) |
 | `snip tags` | List all tags |
-| `snip search <query>` | Semantic search (`--json`, `-n`, `--mode`) |
+| `snip search <query>` | Ranked keyword search (`--json`, `-n`, `--semantic`, `--mode`) |
 | `snip find <query>` | Fuzzy text search |
 | `snip rename <name> <new-name>` | Rename a snippet |
 | `snip run <name>` | Fill template variables and copy result (`--var key=value`) |
@@ -166,7 +166,8 @@ The `related` field uses Obsidian-style wikilinks for cross-referencing. For pro
 snip install alfred
 ```
 
-- **`snip` keyword** — search snippets
+- **`snip` keyword** — fast keyword search
+- **`snipsem` keyword** — semantic search via qmd (slower)
 - **Enter** — paste snippet
 - **Cmd+Enter** — copy to clipboard
 - **Alt+Enter** — open file

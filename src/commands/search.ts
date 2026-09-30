@@ -9,13 +9,15 @@ import { assertLibraryExists, getLibraryPath } from "../lib/config.js";
 import { existsSync } from "node:fs";
 import type { Snippet } from "../types/index.js";
 import { formatSnippetLine } from "../lib/format.js";
+import { textSearch } from "../lib/text-search.js";
 
 export const searchCommand = new Command("search")
-  .description("Semantic search across snippets (via qmd)")
+  .description("Fast keyword search across snippets (--semantic for qmd)")
   .argument("<query>", "Search query")
   .option("--json", "Output Alfred-compatible JSON (non-interactive)")
   .option("-n, --max <number>", "Maximum results", "10")
-  .option("--mode <mode>", "Search mode: query (hybrid), search (keyword), vsearch (vector)", "query")
+  .option("-s, --semantic", "Semantic search via qmd (slower)")
+  .option("--mode <mode>", "qmd search mode, implies --semantic: query (hybrid), search (keyword), vsearch (vector)")
   .action(async (query: string, opts) => {
     const libPath = getLibraryPath();
     assertLibraryExists(libPath);
@@ -23,42 +25,30 @@ export const searchCommand = new Command("search")
     const maxResults = parseInt(opts.max, 10);
     let results: Snippet[] = [];
 
-    // Try qmd first
-    const hasQmd = await ensureQmd();
-    if (hasQmd) {
-      const qmdResults = await qmdSearch(query, {
-        maxResults,
-        mode: opts.mode,
-      });
+    if (opts.semantic || opts.mode) {
+      const hasQmd = await ensureQmd();
+      if (hasQmd) {
+        const qmdResults = await qmdSearch(query, {
+          maxResults,
+          mode: opts.mode ?? "query",
+        });
 
-      // Map qmd results back to Snippet objects
-      for (const r of qmdResults) {
-        if (existsSync(r.file)) {
-          try {
-            results.push(parseSnippetFile(r.file));
-          } catch {
-            // Skip unparseable files
+        // Map qmd results back to Snippet objects
+        for (const r of qmdResults) {
+          if (existsSync(r.file)) {
+            try {
+              results.push(parseSnippetFile(r.file));
+            } catch {
+              // Skip unparseable files
+            }
           }
         }
       }
     }
 
-    // Fall back to text search if qmd unavailable or returned nothing
+    // Keyword search is the default, and the fallback when qmd is unavailable or returns nothing
     if (results.length === 0) {
-      const queryLower = query.toLowerCase();
-      const allSnippets = getAllSnippets();
-      results = allSnippets.filter((s) => {
-        const searchable = [
-          s.slug,
-          s.frontmatter.title,
-          ...s.frontmatter.tags,
-          s.frontmatter.language,
-          s.body,
-        ]
-          .join(" ")
-          .toLowerCase();
-        return searchable.includes(queryLower);
-      });
+      results = textSearch(getAllSnippets(), query).slice(0, maxResults);
     }
 
     if (results.length === 0) {

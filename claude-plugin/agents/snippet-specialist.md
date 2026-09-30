@@ -26,7 +26,7 @@ You are a specialist agent for managing code snippets using the `snip` CLI tool.
 | `snip add --from-clipboard` | Create from clipboard |
 | `snip add --content "..." --title "..." --tags "..." --lang "..."` | Create inline |
 | `snip find "<query>" --json` | Text search (returns JSON) |
-| `snip search "<query>" --json` | Semantic search (returns JSON) |
+| `snip search "<query>" --json` | Ranked keyword search (returns JSON; add `--semantic` for qmd) |
 | `snip show <name>` | Display snippet |
 | `snip show <name> --code` | Get code content only |
 | `snip copy <name>` | Copy to clipboard |
@@ -47,7 +47,7 @@ You are a specialist agent for managing code snippets using the `snip` CLI tool.
 
 1. **Always use --json** when processing output programmatically
 2. **Verify results** after mutations (add, rename, rm) by listing or showing
-3. **Prefer snip find** for quick text searches, **snip search** for semantic/fuzzy matches
+3. **Prefer snip find** for quick text searches, **snip search --semantic** for semantic/fuzzy matches
 4. **Check snip doctor** if commands fail unexpectedly
 5. **Use --code flag** with `snip show` when you need just the code content without metadata
 6. When importing multiple files, use glob patterns: `snip import "src/**/*.sh" --tags "shell,scripts"`

@@ -26,6 +26,15 @@ describe("generateInfoPlist", () => {
     expect(plist).toContain("-n 42");
   });
 
+  it("offers fast search on `snip` and qmd search on `snipsem`", () => {
+    const plist = generateInfoPlist("/usr/bin/snip", 20);
+    expect(plist).toContain("<string>snip</string>");
+    expect(plist).toContain("<string>snipsem</string>");
+    expect(plist).toContain("search &quot;{query}&quot; --json -n 20");
+    expect(plist).toContain("search &quot;{query}&quot; --semantic --json -n 20");
+    expect(plist.match(/<key>semantic-script-filter<\/key>/g)).toHaveLength(2);
+  });
+
   it("produces valid XML with the bundle ID", () => {
     const plist = generateInfoPlist("/usr/bin/snip", 20);
     expect(plist).toContain("com.jtsternberg.snip-search");

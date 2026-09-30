@@ -23,7 +23,8 @@ snip show <name>                          # View a snippet
 snip show <name> --raw                    # View with frontmatter metadata
 snip copy <name>                          # Copy to clipboard
 snip find "query"                         # Text search
-snip search "query"                       # Semantic search (requires qmd)
+snip search "query"                       # Fast keyword search
+snip search "query" --semantic            # Semantic search (requires qmd)
 snip exec <name> -- args                  # Execute a command snippet
 snip run <name> --var key=value           # Fill a prompt template
 snip rm <name> --force                    # Delete a snippet
@@ -59,7 +60,7 @@ The `--type` flag on `snip add` determines where a snippet is stored and how it 
 **User wants to find a snippet**:
 1. Know the name? → `snip show <name>`
 2. Know keywords? → `snip find "query"`
-3. Conceptual search? → `snip search "query"`
+3. Conceptual search? → `snip search "query" --semantic`
 
 **User wants to import from files/URLs**:
 → `snip import <source> --type <type> --tags "..."`

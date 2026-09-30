@@ -485,6 +485,10 @@ export function generateInfoPlist(snipBin: string, maxResults: number): string {
     preamble,
     `"$SNIP_BIN" search "{query}" --json -n ${maxResults}`,
   ].join("\n");
+  const semanticSearchScript = [
+    preamble,
+    `"$SNIP_BIN" search "{query}" --semantic --json -n ${maxResults}`,
+  ].join("\n");
   const captureScript = [
     preamble,
     `echo -n "$1" | pbcopy`,
@@ -575,6 +579,49 @@ export function generateInfoPlist(snipBin: string, maxResults: number): string {
 			</dict>
 		</array>
 		<key>script-filter</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>paste-action</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>copy-action</string>
+				<key>modifiers</key>
+				<integer>1048576</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>editor-action</string>
+				<key>modifiers</key>
+				<integer>524288</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>finder-action</string>
+				<key>modifiers</key>
+				<integer>262144</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>semantic-script-filter</key>
 		<array>
 			<dict>
 				<key>destinationuid</key>
@@ -742,6 +789,55 @@ export function generateInfoPlist(snipBin: string, maxResults: number): string {
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<false/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>snipsem</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<false/>
+				<key>queuedelaymode</key>
+				<integer>1</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string>Semantic search via qmd (slower)…</string>
+				<key>script</key>
+				<string>${escapeXml(semanticSearchScript)}</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>Semantic search via qmd (slower)</string>
+				<key>title</key>
+				<string>Snip: Semantic Search</string>
+				<key>type</key>
+				<integer>5</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>semantic-script-filter</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>acceptsfiles</key>
 				<false/>
 				<key>acceptsmulti</key>
@@ -903,6 +999,13 @@ export function generateInfoPlist(snipBin: string, maxResults: number): string {
 			<key>ypos</key>
 			<real>150</real>
 		</dict>
+		<key>semantic-script-filter</key>
+		<dict>
+			<key>xpos</key>
+			<real>100</real>
+			<key>ypos</key>
+			<real>300</real>
+		</dict>
 		<key>capture-trigger</key>
 		<dict>
 			<key>xpos</key>
@@ -1014,7 +1117,7 @@ function installAlfredWorkflow(): void {
 
   console.log("Installed Alfred workflow: Snip Search");
   console.log();
-  console.log(`  Keyword: snip`);
+  console.log(`  Keywords: snip (fast), snipsem (semantic via qmd)`);
   console.log(`  Location: ${workflowDir}`);
   console.log();
   console.log("Actions:");

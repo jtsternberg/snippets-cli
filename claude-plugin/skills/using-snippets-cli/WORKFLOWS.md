@@ -27,7 +27,7 @@ snip find "error handling"
 snip copy error-handling-pattern
 
 # Semantic search for conceptual matches
-snip search "how to retry failed API calls"
+snip search "how to retry failed API calls" --semantic
 snip copy fetch-with-retry
 
 # Filtered search

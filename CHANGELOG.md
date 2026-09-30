@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `perf(search)`: `snip search` (and the Alfred workflow) now defaults to ranked in-process keyword search (~0.6s vs ~17s via qmd `query`). Multi-word queries match terms in any order. Use `--semantic` (or `--mode`) for qmd search; Alfred gets a `snipsem` keyword for it (re-run `snip install alfred`).
+
 ## [1.2.0] - 2026-03-19
 
 ### Added
