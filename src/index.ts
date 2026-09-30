@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { createRequire } from "node:module";
 import { assertLibraryExists, getLibraryPath } from "./lib/config.js";
 import { isGitInstalled, isGitRepo, initGitRepo, installPostCommitHook, isHookInstalled, commitAll, hasChanges } from "./lib/git.js";
 import { surfaceQmdErrors } from "./lib/qmd-status.js";
@@ -37,12 +38,15 @@ import { syncCommand } from "./commands/sync.js";
 import { enrichCommand } from "./commands/enrich.js";
 import { reindexCommand } from "./commands/reindex.js";
 
+// Resolves from both dist/ and src/, and package.json always ships in the npm tarball.
+const pkg = createRequire(import.meta.url)("../package.json") as { version: string };
+
 const program = new Command();
 
 program
   .name("snip")
   .description("CLI snippet manager with semantic search and Obsidian-compatible storage")
-  .version("0.1.1");
+  .version(pkg.version);
 
 program.addCommand(initCommand);
 program.addCommand(addCommand);
