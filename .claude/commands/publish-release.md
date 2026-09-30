@@ -41,7 +41,7 @@ Create a new release. Version can be provided as $1, or auto-detected from commi
    ```bash
    git add CHANGELOG.md package.json package-lock.json
    git commit -m "Prepare release vX.Y.Z"
-   git tag vX.Y.Z
+   git tag -a vX.Y.Z -m "vX.Y.Z"  # annotated: tag.gpgsign=true rejects lightweight tags
    ```
 
 7. **Push** (ask for confirmation first):
@@ -55,6 +55,7 @@ Create a new release. Version can be provided as $1, or auto-detected from commi
    - Sign in to 1Password CLI first: `op signin --account my.1password.com`
    - Publish with OTP from 1Password: `npm publish --access public --otp=$(op item get "npmjs.com" --otp)`
    - Verify: `npm view @jtsternberg/snip version` should show the new version
+   - **npm is notoriously slow to surface a new version.** A publish that prints `+ @jtsternberg/snip@X.Y.Z` ("being processed and may take a few minutes") can stay invisible for well over 10 minutes: `npm view` shows the old `latest`, the tarball 404s, and `npm stage list` shows nothing. That is not a failure. Do NOT re-publish — it returns `409 Cannot publish over previously staged version`. Check the npm page while logged in, report the version as pending, and move on.
    - Note: Package is scoped (@jtsternberg/snip) so `--access public` is required.
    - npm page: https://www.npmjs.com/package/@jtsternberg/snip
 
