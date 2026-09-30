@@ -7,9 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-30
+
+### Added
+
+- `feat(search)`: `--semantic` / `-s` flag for qmd semantic search; Alfred gets a `snipsem` keyword for it (re-run `snip install alfred`)
+- `feat(git)`: git-backed collections — `snip init` creates a git repo and hook, commands auto-commit via a commit window, and qmd re-indexing moved to a post-commit hook (supports `core.hooksPath`)
+- `feat(doctor)`: `--fix` to auto-resolve fixable issues; Git and Obsidian health checks; detects outdated hooks
+- `feat(install)`: `snip install qmd` to set up and repair qmd
+- `feat(qmd)`: `snip reindex` for manual re-indexing; collection context added on register
+- `feat(config)`: `config:types:fix` recreates missing type dirs and `.base` files; adding a type creates its Obsidian `.base` file
+- `feat(init)`: generates a README.md in new snippet libraries
+- `feat(add)`: `--body` alias for `--content`
+- `feat(edit)`: skip the write (and commit) when nothing changed
+
 ### Changed
 
-- `perf(search)`: `snip search` (and the Alfred workflow) now defaults to ranked in-process keyword search (~0.6s vs ~17s via qmd `query`). Multi-word queries match terms in any order. Use `--semantic` (or `--mode`) for qmd search; Alfred gets a `snipsem` keyword for it (re-run `snip install alfred`).
+- `perf(search)`: `snip search` and the Alfred `snip` keyword now default to ranked in-process keyword search (~0.6s vs ~17s via qmd `query`). Multi-word queries match terms in any order. `--mode` now implies `--semantic`.
+
+### Fixed
+
+- `fix(exec)`: context-aware shell quoting for template variables
+- `fix(qmd)`: detect and fix collection path/name conflicts; check state instead of parsing error messages; surface qmd errors instead of swallowing them
+- `fix(git)`: handle a corrupted hook with a start marker but no end marker
+- `fix(doctor)`: `--fix` runs before the report; remediation text points at `snip install qmd` / `snip install completions`
+- `fix(init)`: add editor temp-file patterns to the library `.gitignore`
+- `fix`: asset paths resolve in dev builds
 
 ## [1.2.0] - 2026-03-19
 
