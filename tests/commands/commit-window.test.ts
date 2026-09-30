@@ -3,20 +3,17 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
+import { sandboxEnv, useOfflineLlm, OFFLINE_OLLAMA_HOST } from "../helpers/sandbox.js";
 
 const snipBin = resolve(process.cwd(), "dist/index.js");
-
-// Minimal PATH: node + git but no qmd/ollama, avoids slow external tool checks
-const MINIMAL_PATH = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"].join(":");
 
 function snip(args: string[], testDir: string, libDir: string): string {
   return execFileSync("node", [snipBin, ...args], {
     env: {
-      ...process.env,
+      ...sandboxEnv({ qmd: "none" }),
       SNIP_LIBRARY: libDir,
       HOME: testDir,
       XDG_CONFIG_HOME: resolve(testDir, ".config"),
-      PATH: MINIMAL_PATH,
       EDITOR: "true", // ensure config stores a fast no-op editor
     },
     encoding: "utf-8",
@@ -40,6 +37,7 @@ function setupSnipEnv(): { testDir: string; libDir: string } {
   const testDir = mkdtempSync(join(tmpdir(), "snip-commit-window-"));
   const libDir = resolve(testDir, "snippets");
   snip(["init", libDir], testDir, libDir);
+  useOfflineLlm(resolve(testDir, ".config"));
   return { testDir, libDir };
 }
 
@@ -59,7 +57,7 @@ function setupManualEnv(): { testDir: string; libDir: string } {
       types: ["snippets", "prompts"],
       defaultType: "snippets",
       editor: "cat",
-      llm: { provider: "ollama", ollamaModel: "qwen2.5-coder:7b", ollamaHost: "http://localhost:11434", fallbackProvider: null, openaiApiKey: null, anthropicApiKey: null },
+      llm: { provider: "ollama", ollamaModel: "qwen2.5-coder:7b", ollamaHost: OFFLINE_OLLAMA_HOST, fallbackProvider: null, openaiApiKey: null, anthropicApiKey: null },
       qmd: { collectionName: "snip" },
       alfred: { maxResults: 20 },
     }),
@@ -196,7 +194,7 @@ describe("commit window — full E2E workflow", () => {
         types: ["snippets"],
         defaultType: "snippets",
         editor: "true",
-        llm: { provider: "ollama", ollamaModel: "m", ollamaHost: "http://localhost:11434", fallbackProvider: null, openaiApiKey: null, anthropicApiKey: null },
+        llm: { provider: "ollama", ollamaModel: "m", ollamaHost: OFFLINE_OLLAMA_HOST, fallbackProvider: null, openaiApiKey: null, anthropicApiKey: null },
         qmd: { collectionName: "snip" },
         alfred: { maxResults: 20 },
       }),

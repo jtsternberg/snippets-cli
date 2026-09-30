@@ -3,20 +3,17 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
+import { sandboxEnv, useOfflineLlm } from "../helpers/sandbox.js";
 
 const snipBin = resolve(process.cwd(), "dist/index.js");
-
-// Minimal PATH: node + git but no qmd/ollama
-const MINIMAL_PATH = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"].join(":");
 
 function snip(args: string[], testDir: string, libDir: string, extraEnv: Record<string, string> = {}): string {
   return execFileSync("node", [snipBin, ...args], {
     env: {
-      ...process.env,
+      ...sandboxEnv({ qmd: "none" }),
       SNIP_LIBRARY: libDir,
       HOME: testDir,
       XDG_CONFIG_HOME: resolve(testDir, ".config"),
-      PATH: MINIMAL_PATH,
       EDITOR: "true", // default no-op editor (overridable via extraEnv)
       ...extraEnv,
     },
@@ -29,6 +26,7 @@ function setupSnipEnv(): { testDir: string; libDir: string } {
   const testDir = mkdtempSync(join(tmpdir(), "snip-edit-test-"));
   const libDir = resolve(testDir, "snippets");
   snip(["init", libDir], testDir, libDir);
+  useOfflineLlm(resolve(testDir, ".config"));
 
   // Patch config to clear editor so EDITOR env var is used at runtime
   const configPath = resolve(testDir, ".config", "snip", "config.json");

@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createTestBins } from "./helpers/sandbox.js";
 
 /**
  * Runs once before all test files. Builds dist/index.js so every test suite
@@ -6,6 +7,7 @@ import { execFileSync } from "node:child_process";
  * or MODULE_NOT_FOUND failures.
  */
 export function setup() {
+  createTestBins();
   execFileSync("npm", ["run", "build"], {
     cwd: process.cwd(),
     encoding: "utf-8",

@@ -9,6 +9,7 @@ import {
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { parseGistId } from "../src/lib/gist.js";
+import { sandboxEnv, OFFLINE_OLLAMA_HOST } from "./helpers/sandbox.js";
 
 // ---------------------------------------------------------------------------
 // Unit tests for gist URL/ID parsing
@@ -50,7 +51,7 @@ const realHome = process.env.HOME || "";
 const ghConfigDir = process.env.GH_CONFIG_DIR || resolve(realHome, ".config", "gh");
 
 const testEnv = {
-  ...process.env,
+  ...sandboxEnv(),
   SNIP_LIBRARY: libDir,
   HOME: testDir,
   XDG_CONFIG_HOME: resolve(testDir, ".config"),
@@ -119,7 +120,7 @@ beforeAll(() => {
       llm: {
         provider: "ollama",
         ollamaModel: "qwen2.5-coder:7b",
-        ollamaHost: "http://localhost:11434",
+        ollamaHost: OFFLINE_OLLAMA_HOST,
         fallbackProvider: null,
         openaiApiKey: null,
         anthropicApiKey: null,

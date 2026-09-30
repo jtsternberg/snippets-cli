@@ -5,6 +5,7 @@ import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
 
 import { HOOK_VERSION } from "../../src/lib/git.js";
+import { sandboxEnv, OFFLINE_OLLAMA_HOST } from "../helpers/sandbox.js";
 
 const snipBin = resolve(process.cwd(), "dist/index.js");
 
@@ -17,7 +18,7 @@ function makeConfig(libDir: string) {
     llm: {
       provider: "ollama",
       ollamaModel: "qwen2.5-coder:7b",
-      ollamaHost: "http://localhost:11434",
+      ollamaHost: OFFLINE_OLLAMA_HOST,
       fallbackProvider: null,
       openaiApiKey: null,
       anthropicApiKey: null,
@@ -30,7 +31,7 @@ function makeConfig(libDir: string) {
 function snipDoctor(testDir: string, libDir: string, extraArgs: string[] = []): string {
   return execFileSync("node", [snipBin, "doctor", ...extraArgs], {
     env: {
-      ...process.env,
+      ...sandboxEnv(),
       SNIP_LIBRARY: libDir,
       HOME: testDir,
       XDG_CONFIG_HOME: resolve(testDir, ".config"),

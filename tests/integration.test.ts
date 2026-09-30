@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { sandboxEnv, OFFLINE_OLLAMA_HOST } from "./helpers/sandbox.js";
 
 const testDir = resolve(tmpdir(), `snip-integration-${Date.now()}`);
 const configDir = resolve(testDir, ".config", "snip");
@@ -12,7 +13,7 @@ const snipBin = resolve(process.cwd(), "dist/index.js");
 function snip(args: string[], opts: { input?: string } = {}): string {
   return execFileSync("node", [snipBin, ...args], {
     env: {
-      ...process.env,
+      ...sandboxEnv(),
       SNIP_LIBRARY: libDir,
       HOME: testDir,
       XDG_CONFIG_HOME: resolve(testDir, ".config"),
@@ -39,7 +40,7 @@ beforeAll(() => {
       llm: {
         provider: "ollama",
         ollamaModel: "qwen2.5-coder:7b",
-        ollamaHost: "http://localhost:11434",
+        ollamaHost: OFFLINE_OLLAMA_HOST,
         fallbackProvider: null,
         openaiApiKey: null,
         anthropicApiKey: null,

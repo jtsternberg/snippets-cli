@@ -3,20 +3,17 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { tmpdir } from "node:os";
+import { sandboxEnv } from "../helpers/sandbox.js";
 
 const snipBin = resolve(process.cwd(), "dist/index.js");
-
-// Minimal PATH with node + git but no qmd, so ensureQmd() returns false.
-const PATH_WITHOUT_QMD = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"].join(":");
 
 function snip(args: string[], testDir: string, libDir: string): string {
   return execFileSync("node", [snipBin, ...args], {
     env: {
-      ...process.env,
+      ...sandboxEnv({ qmd: "none" }),
       SNIP_LIBRARY: libDir,
       HOME: testDir,
       XDG_CONFIG_HOME: resolve(testDir, ".config"),
-      PATH: PATH_WITHOUT_QMD,
     },
     encoding: "utf-8",
     timeout: 15000,
